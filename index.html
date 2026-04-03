@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高配当株 管理シート</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- ナビゲーション -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h1>高配当株<br>管理シート</h1>
+    </div>
+    <ul class="nav-list">
+      <li><a href="#" class="nav-link active" data-page="settings">設定</a></li>
+      <li><a href="#" class="nav-link" data-page="dashboard">管理シート</a></li>
+      <li><a href="#" class="nav-link" data-page="entry">銘柄入力</a></li>
+      <li><a href="#" class="nav-link" data-page="nisa">NISA管理</a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <button id="exportBtn" class="btn btn-outline">データ書出</button>
+      <button id="importBtn" class="btn btn-outline">データ読込</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+  </nav>
+
+  <!-- メインコンテンツ -->
+  <div class="main-content">
+    <!-- ===== 設定ページ ===== -->
+    <div class="page active" id="page-settings">
+      <h2 class="page-title">設定</h2>
+
+      <div class="settings-grid">
+        <div class="setting-card">
+          <h3>管理したいものを選択してください。</h3>
+          <select id="settingScope">
+            <option value="both">国内と米国</option>
+            <option value="domestic">国内のみ</option>
+            <option value="us">米国のみ</option>
+          </select>
+        </div>
+
+        <div class="setting-card">
+          <h3>配当金の表示を選択してください。</h3>
+          <select id="settingDivDisplay">
+            <option value="before_tax">税引前</option>
+            <option value="after_tax">税引後</option>
+          </select>
+        </div>
+
+        <div class="setting-card">
+          <h3>業種割合の算出基準を選択してください。</h3>
+          <select id="settingBasis">
+            <option value="dividend">配当金</option>
+            <option value="valuation">評価額</option>
+          </select>
+        </div>
+
+        <div class="setting-card">
+          <h3>利用する証券会社を選択してください。</h3>
+          <select id="settingBroker">
+            <option value="sbi">SBI証券</option>
+            <option value="rakuten">楽天証券</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 業種別 ディフェンシブ・景気敏感 設定 -->
+      <div class="setting-card full-width">
+        <h3>ディフェンシブ・景気敏感を選んでください。</h3>
+        <p class="setting-note">※個別銘柄を設定すると業種の設定よりも優先されます。</p>
+        <p class="setting-note">※割合の算出基準は「業種割合」の設定と同じになります。</p>
+
+        <div class="two-col">
+          <div>
+            <h4>業種別 設定</h4>
+            <table class="settings-table" id="industryTypeTable">
+              <thead>
+                <tr><th>業種</th><th>景気感応度</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div>
+            <h4>個別銘柄 設定</h4>
+            <table class="settings-table" id="stockTypeTable">
+              <thead>
+                <tr><th>銘柄コード</th><th>景気感応度</th></tr>
+              </thead>
+              <tbody id="stockTypeBody"></tbody>
+            </table>
+            <button class="btn btn-small" id="addStockTypeBtn">+ 行追加</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 管理シート (ダッシュボード) ===== -->
+    <div class="page" id="page-dashboard">
+      <h2 class="page-title">管理シート</h2>
+
+      <!-- サマリーカード -->
+      <section class="summary-section">
+        <div class="summary-card">
+          <h3>保有資産額</h3>
+          <p class="big-number" id="totalAssets">0<span class="unit">円</span></p>
+          <div class="breakdown">
+            <p>≪内訳≫</p>
+            <p>購入額 <span id="totalPurchase">0円</span></p>
+            <p>損益額 <span id="totalPL">0円</span></p>
+            <p>(%) <span id="totalPLPct">(0%)</span></p>
+          </div>
+        </div>
+        <div class="summary-card">
+          <h3>配当利回り</h3>
+          <p class="big-number" id="divYield">0.00<span class="unit">%</span></p>
+        </div>
+        <div class="summary-card">
+          <h3>年間配当金（税引前）</h3>
+          <p class="big-number" id="annualDiv">0<span class="unit">円</span></p>
+        </div>
+        <div class="summary-card">
+          <h3>銘柄数</h3>
+          <p class="big-number" id="stockCount">0<span class="unit">銘柄</span></p>
+        </div>
+      </section>
+
+      <!-- チャートセクション -->
+      <section class="charts-section">
+        <div class="chart-card">
+          <h3>業種割合（配当金）</h3>
+          <canvas id="industryChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>銘柄数（利回り別）</h3>
+          <canvas id="yieldDistChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>配当金支払額（月別）※米国は除く</h3>
+          <canvas id="monthlyDivChart"></canvas>
+        </div>
+      </section>
+
+      <!-- 銘柄構成比 -->
+      <section class="composition-section">
+        <h3>銘柄構成比（評価額）</h3>
+        <div class="composition-legend">
+          <span class="legend-defense">ディフェンシブ (<span id="defensePct">0</span>%)</span>
+          <span class="legend-cyclical">景気敏感 (<span id="cyclicalPct">0</span>%)</span>
+        </div>
+        <div class="composition-bar" id="compositionBar">
+          <div class="bar-empty">データなし</div>
+        </div>
+      </section>
+
+      <!-- 配当金Top20 -->
+      <section class="table-section">
+        <h3>配当金 Top20</h3>
+        <div class="filter-row">
+          <label>業種：</label>
+          <select id="industryFilter">
+            <option value="all">全業種</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table id="top20Table">
+            <thead>
+              <tr>
+                <th>No</th><th>code</th><th>銘柄名</th><th>業種</th><th>配当金</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="5" class="empty-msg">銘柄を入力してください</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 全銘柄一覧 -->
+      <section class="table-section">
+        <h3>全銘柄一覧</h3>
+        <div class="table-wrapper">
+          <table id="holdingsTable">
+            <thead>
+              <tr>
+                <th>No</th><th>コード</th><th>銘柄名</th><th>業種</th>
+                <th>保有数</th><th>取得単価</th><th>購入額</th><th>株価</th>
+                <th>評価額</th><th>割合</th><th>損益 (%)</th>
+                <th>配当金単価</th><th>配当金</th><th>割合</th>
+                <th>利回り(取得)</th><th>利回り(税引)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="16" class="empty-msg">銘柄を入力してください</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== 銘柄入力ページ ===== -->
+    <div class="page" id="page-entry">
+      <h2 class="page-title">銘柄入力</h2>
+      <p class="page-desc">保有銘柄の情報を入力してください。</p>
+
+      <div class="entry-form-area">
+        <div class="entry-toolbar">
+          <button class="btn btn-primary" id="addRowBtn">+ 銘柄追加</button>
+          <button class="btn btn-danger" id="deleteSelectedBtn">選択削除</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="entryTable">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll"></th>
+                <th>銘柄コード</th>
+                <th>銘柄名</th>
+                <th>業種</th>
+                <th>保有数</th>
+                <th>取得単価</th>
+                <th>現在株価</th>
+                <th>配当金単価(年)</th>
+                <th>配当月(カンマ区切)</th>
+              </tr>
+            </thead>
+            <tbody id="entryBody">
+            </tbody>
+          </table>
+        </div>
+        <p class="setting-note">※入力後は自動保存されます。管理シートに反映されます。</p>
+      </div>
+    </div>
+
+    <!-- ===== NISA管理ページ ===== -->
+    <div class="page" id="page-nisa">
+      <h2 class="page-title">NISA管理</h2>
+      <p class="page-desc">NISAで購入している銘柄コード（ティッカー）と保有数を記入してください。</p>
+
+      <div class="entry-form-area">
+        <div class="entry-toolbar">
+          <button class="btn btn-primary" id="addNisaRowBtn">+ 行追加</button>
+          <button class="btn btn-danger" id="deleteNisaSelectedBtn">選択削除</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="nisaTable">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="nisaSelectAll"></th>
+                <th>コード or ティッカー<br><span class="th-note">※保有しているものに限る</span></th>
+                <th>銘柄名<br><span class="th-note">（コード等があれば自動で表示されます）</span></th>
+                <th>NISAでの保有数</th>
+              </tr>
+            </thead>
+            <tbody id="nisaBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
