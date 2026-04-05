@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.buffettkaoru.investment-news</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <!-- Python パスは環境に合わせて変更してください -->
+        <string>/usr/bin/env</string>
+        <string>python3</string>
+        <string>generate_slides.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <!-- ★ プロジェクトの絶対パスに書き換えてください -->
+    <string>/Users/YOUR_USERNAME/my-first-app</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/investment-news-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/investment-news-stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>
