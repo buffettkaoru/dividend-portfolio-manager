@@ -26,9 +26,6 @@ OUTPUT_DIR = Path(__file__).parent / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    print("エラー: GEMINI_API_KEY が設定されていません。.env ファイルを確認してください。")
-    sys.exit(1)
 
 TODAY = datetime.now().strftime("%Y年%m月%d日")
 TODAY_FILE = datetime.now().strftime("%Y%m%d")
@@ -37,6 +34,9 @@ TODAY_FILE = datetime.now().strftime("%Y%m%d")
 # ── 1. Gemini API でニュース取得 ──────────────────────
 def fetch_news_topics() -> list[dict]:
     """Gemini APIを使って、本日の注目投資ニュース3トピックを取得する。"""
+    if not GEMINI_API_KEY:
+        print("エラー: GEMINI_API_KEY が設定されていません。.env ファイルを確認してください。")
+        sys.exit(1)
     client = genai.Client(api_key=GEMINI_API_KEY)
 
     prompt = f"""あなたは投資・経済ニュースの専門アナリストです。
