@@ -73,7 +73,7 @@ def fetch_news_topics() -> list[dict]:
 """
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash-001",
+        model="gemini-2.5-flash",
         contents=prompt,
     )
 
@@ -218,6 +218,141 @@ def create_topic_slide(prs: Presentation, topic: dict, index: int):
     add_shape_rect(slide, Inches(0), Inches(7.42), SLIDE_WIDTH, Inches(0.08), COLOR_ACCENT)
 
 
+# ── 投資分析スライド ────────────────────────────────────
+
+COLOR_GOLD = RGBColor(0xFF, 0xD7, 0x00)
+COLOR_SECTION_BG = RGBColor(0x22, 0x22, 0x3A)
+
+INVESTMENT_STOCKS = [
+    {
+        "name": "日東富士製粉 (2003)",
+        "stability": "2026年までの中計で「累進配当」を導入。自己資本比率も高く、下限配当を設定できるほどキャッシュが潤沢。",
+        "reason": "パン、麺類、お菓子などの原料「小麦粉」の国内大手。食卓に欠かせない究極のディフェンシブ業種。",
+        "keyword": "食べる（小麦粉）",
+    },
+    {
+        "name": "ブリヂストン (5108)",
+        "stability": "世界首位級のタイヤメーカー。2026年度も増収増益を見込み、1,500億円規模の自社株買いを行うほど財務力がある。",
+        "reason": "「移動」を支えるインフラ企業。EVになってもタイヤは必ず消耗・交換が必要で、社会の物流と移動に不可欠。",
+        "keyword": "移動する（タイヤ）",
+    },
+    {
+        "name": "積水ハウス (1928)",
+        "stability": "国内外で強固な顧客基盤を持ち、配当性向40%以上を維持。米国市場の成長も取り込み安定した収益構造。",
+        "reason": "「衣・食・住」の「住」のトップランナー。良質な住宅供給は家族の安全と幸せな暮らしを支える社会の土台。",
+        "keyword": "住まう（住宅）",
+    },
+]
+
+
+def create_investment_title_slide(prs: Presentation):
+    """投資分析セクションのタイトルスライドを作成する。"""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_slide_bg(slide, COLOR_BG_DARK)
+
+    add_shape_rect(slide, Inches(0), Inches(0), SLIDE_WIDTH, Inches(0.08), COLOR_GOLD)
+
+    add_textbox(slide, Inches(1), Inches(1.5), Inches(11), Inches(1),
+                f"{TODAY}、私が「生活の土台」に投資した理由",
+                font_size=38, color=COLOR_GOLD, bold=True,
+                alignment=PP_ALIGN.CENTER)
+
+    add_textbox(slide, Inches(1), Inches(3.2), Inches(11), Inches(0.8),
+                "本日、3つの日本株に投資しました",
+                font_size=26, color=COLOR_WHITE,
+                alignment=PP_ALIGN.CENTER)
+
+    add_textbox(slide, Inches(1), Inches(4.2), Inches(11), Inches(0.6),
+                "日東富士製粉 ・ ブリヂストン ・ 積水ハウス",
+                font_size=24, color=COLOR_ACCENT, bold=True,
+                alignment=PP_ALIGN.CENTER)
+
+    add_textbox(slide, Inches(2), Inches(5.4), Inches(9), Inches(1.2),
+                "「どんな時代になっても、人が生きていく上で絶対に欠かせないもの」を提供している企業に投資する",
+                font_size=18, color=COLOR_LIGHT_GRAY,
+                alignment=PP_ALIGN.CENTER)
+
+    add_shape_rect(slide, Inches(0), Inches(7.42), SLIDE_WIDTH, Inches(0.08), COLOR_GOLD)
+
+
+def create_stock_slide(prs: Presentation, stock: dict, index: int):
+    """個別銘柄の分析スライドを作成する。"""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_slide_bg(slide, COLOR_BG_DARK)
+
+    # ── ヘッダー ──
+    add_shape_rect(slide, Inches(0.5), Inches(0.4), Inches(0.9), Inches(0.7), COLOR_GOLD)
+    add_textbox(slide, Inches(0.5), Inches(0.42), Inches(0.9), Inches(0.7),
+                f"#{index}", font_size=32, color=COLOR_BG_DARK, bold=True,
+                alignment=PP_ALIGN.CENTER)
+
+    add_textbox(slide, Inches(1.8), Inches(0.35), Inches(10), Inches(0.8),
+                stock["name"], font_size=32, color=COLOR_WHITE, bold=True)
+
+    # キーワードバッジ
+    add_shape_rect(slide, Inches(1.8), Inches(1.1), Inches(3.5), Inches(0.5), COLOR_ACCENT)
+    add_textbox(slide, Inches(1.8), Inches(1.12), Inches(3.5), Inches(0.5),
+                f"  {stock['keyword']}", font_size=16, color=COLOR_BG_DARK, bold=True)
+
+    # 区切り線
+    add_shape_rect(slide, Inches(0.5), Inches(1.9), Inches(12.3), Inches(0.03), COLOR_GOLD)
+
+    # ── 2カラムレイアウト ──
+    # 財務安定性
+    add_shape_rect(slide, Inches(0.5), Inches(2.3), Inches(5.8), Inches(0.55), COLOR_GOLD)
+    add_textbox(slide, Inches(0.5), Inches(2.32), Inches(5.8), Inches(0.55),
+                "  財務安定性", font_size=18, color=COLOR_BG_DARK, bold=True)
+    add_textbox(slide, Inches(0.5), Inches(3.1), Inches(5.8), Inches(3.5),
+                stock["stability"], font_size=16, color=COLOR_LIGHT_GRAY)
+
+    # 生活に必要な理由
+    add_shape_rect(slide, Inches(7.0), Inches(2.3), Inches(5.8), Inches(0.55), COLOR_ACCENT)
+    add_textbox(slide, Inches(7.0), Inches(2.32), Inches(5.8), Inches(0.55),
+                "  生活に必要な理由", font_size=18, color=COLOR_BG_DARK, bold=True)
+    add_textbox(slide, Inches(7.0), Inches(3.1), Inches(5.8), Inches(3.5),
+                stock["reason"], font_size=16, color=COLOR_LIGHT_GRAY)
+
+    # フッターライン
+    add_shape_rect(slide, Inches(0), Inches(7.42), SLIDE_WIDTH, Inches(0.08), COLOR_GOLD)
+
+
+def create_inflation_slide(prs: Presentation):
+    """インフレ対策スライドを作成する。"""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_slide_bg(slide, COLOR_BG_DARK)
+
+    add_shape_rect(slide, Inches(0), Inches(0), SLIDE_WIDTH, Inches(0.08), COLOR_GOLD)
+
+    add_textbox(slide, Inches(1), Inches(0.5), Inches(11), Inches(0.8),
+                "インフレ負けしない資産を持つ意味",
+                font_size=34, color=COLOR_GOLD, bold=True,
+                alignment=PP_ALIGN.CENTER)
+
+    add_shape_rect(slide, Inches(0.5), Inches(1.5), Inches(12.3), Inches(0.03), COLOR_GOLD)
+
+    add_textbox(slide, Inches(1), Inches(1.9), Inches(11), Inches(1.5),
+                "インフレとは「モノの価値が上がり、お金の価値が下がること」です。\n"
+                "銀行に現金を置いているだけでは、購買力が日々削られていくリスクがあります。",
+                font_size=18, color=COLOR_LIGHT_GRAY,
+                alignment=PP_ALIGN.LEFT)
+
+    add_shape_rect(slide, Inches(1), Inches(3.7), Inches(11.3), Inches(2.2), COLOR_SECTION_BG)
+    add_textbox(slide, Inches(1.3), Inches(3.9), Inches(10.7), Inches(2.0),
+                "「生活に不可欠なサービスを提供する企業の株」を持つことは、\n"
+                "物価上昇に合わせて製品価格を適正化できる「実物資産」を持つことを意味します。\n\n"
+                "企業が稼ぎ続ける限り、配当や株価上昇という形で、\n"
+                "私たちの資産をインフレの波から守ってくれるのです。",
+                font_size=18, color=COLOR_WHITE,
+                alignment=PP_ALIGN.LEFT)
+
+    add_textbox(slide, Inches(1), Inches(6.2), Inches(11), Inches(0.8),
+                "お金を「貯める」から、価値を生む場所に「置く」へ。",
+                font_size=24, color=COLOR_GOLD, bold=True,
+                alignment=PP_ALIGN.CENTER)
+
+    add_shape_rect(slide, Inches(0), Inches(7.42), SLIDE_WIDTH, Inches(0.08), COLOR_GOLD)
+
+
 def create_ending_slide(prs: Presentation):
     """エンディングスライドを作成する。"""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -252,6 +387,13 @@ def generate_slides(topics: list[dict]) -> Path:
     create_title_slide(prs)
     for i, topic in enumerate(topics, 1):
         create_topic_slide(prs, topic, i)
+
+    # 投資分析スライド
+    create_investment_title_slide(prs)
+    for i, stock in enumerate(INVESTMENT_STOCKS, 1):
+        create_stock_slide(prs, stock, i)
+    create_inflation_slide(prs)
+
     create_ending_slide(prs)
 
     output_path = OUTPUT_DIR / f"investment_news_{TODAY_FILE}.pptx"
@@ -297,6 +439,49 @@ def generate_script(topics: list[dict]) -> Path:
         if i < len(topics):
             lines.append("  → 「続いてはこちらのニュースです。」")
         lines.append("-" * 60)
+
+    # 投資分析セクション
+    lines.append("")
+    lines.append("=" * 60)
+    lines.append(f"  {TODAY}、私が「生活の土台」に投資した理由")
+    lines.append("=" * 60)
+    lines.append("")
+    lines.append("  → 「さて、ここからは本日私が実際に投資した3銘柄についてお話しします。」")
+    lines.append("")
+    lines.append("本日、3つの日本株に投資しました。")
+    lines.append("日東富士製粉、ブリヂストン、そして積水ハウスです。")
+    lines.append("")
+    lines.append("なぜこの3銘柄なのか？ 理由はシンプルです。")
+    lines.append("「どんな時代になっても、人が生きていく上で絶対に欠かせないもの」を提供しているからです。")
+    lines.append("")
+    lines.append("-" * 60)
+
+    for i, stock in enumerate(INVESTMENT_STOCKS, 1):
+        lines.append("")
+        lines.append(f"【銘柄{i}】{stock['name']}　── {stock['keyword']}")
+        lines.append("")
+        lines.append(f"  ▼ 財務安定性")
+        lines.append(f"  {stock['stability']}")
+        lines.append("")
+        lines.append(f"  ▼ 生活に必要な理由")
+        lines.append(f"  {stock['reason']}")
+        lines.append("")
+        lines.append("-" * 60)
+
+    lines.append("")
+    lines.append("【インフレ対策としての株式投資】")
+    lines.append("")
+    lines.append("インフレとは「モノの価値が上がり、お金の価値が下がること」です。")
+    lines.append("銀行に現金を置いているだけでは、購買力が日々削られていくリスクがあります。")
+    lines.append("")
+    lines.append("一方で、「生活に不可欠なサービスを提供する企業の株」を持つことは、")
+    lines.append("物価上昇に合わせて製品価格を適正化できる「実物資産」を持つことを意味します。")
+    lines.append("企業が稼ぎ続ける限り、配当や株価上昇という形で、私たちの資産をインフレの波から守ってくれるのです。")
+    lines.append("")
+    lines.append("お金を「貯める」から、価値を生む場所に「置く」へ。")
+    lines.append("皆さんも自分の生活を支えてくれる身近な企業に投資してみてはいかがでしょうか。")
+    lines.append("")
+    lines.append("-" * 60)
 
     # エンディング
     lines.append("")
