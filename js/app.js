@@ -340,6 +340,16 @@
 
     // 業種フィルター更新
     updateIndustryFilter(valid);
+
+    // 専門家チェック実行
+    renderExpertReview();
+  }
+
+  function renderExpertReview() {
+    var container = document.getElementById("expertReviewContent");
+    if (!container) return;
+    var results = ExpertReview.runAllChecks(stocks, nisaItems, settings);
+    container.innerHTML = ExpertReview.renderReviewHTML(results);
   }
 
   function renderIndustryChart(dataMap) {
