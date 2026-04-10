@@ -659,8 +659,212 @@
     e.target.value = "";
   });
 
+  // ----- 認証 -----
+  const AUTH_KEY = 'portfolio_auth_hash';
+  const AUTH_CONFIGURED_KEY = 'portfolio_auth_configured';
+  const AUTH_SESSION_KEY = 'portfolio_authenticated';
+
+  async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password + '_portfolio_salt_v1');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function showLoginOverlay() {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+  }
+
+  function hideLoginOverlay() {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('logoutBtn').style.display = '';
+  }
+
+  function showLoginForm() {
+    document.getElementById('loginForm').classList.remove('hidden');
+    document.getElementById('setupForm').classList.add('hidden');
+    setTimeout(() => document.getElementById('loginPassword').focus(), 50);
+  }
+
+  function showSetupForm() {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('setupForm').classList.remove('hidden');
+  }
+
+  async function checkAuth() {
+    const configured = localStorage.getItem(AUTH_CONFIGURED_KEY);
+    const storedHash = localStorage.getItem(AUTH_KEY);
+
+    if (!configured) {
+      // First visit: show setup form
+      showSetupForm();
+      showLoginOverlay();
+      return;
+    }
+
+    if (!storedHash) {
+      // User chose no password: go straight to app
+      hideLoginOverlay();
+      return;
+    }
+
+    if (sessionStorage.getItem(AUTH_SESSION_KEY) === '1') {
+      // Already authenticated this session
+      hideLoginOverlay();
+      return;
+    }
+
+    // Password is set and not yet authenticated
+    showLoginForm();
+    showLoginOverlay();
+  }
+
+  // Login button
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const password = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+
+    if (!password) {
+      errorEl.textContent = 'パスワードを入力してください。';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    const hash = await hashPassword(password);
+    const storedHash = localStorage.getItem(AUTH_KEY);
+
+    if (hash === storedHash) {
+      sessionStorage.setItem(AUTH_SESSION_KEY, '1');
+      errorEl.classList.add('hidden');
+      document.getElementById('loginPassword').value = '';
+      hideLoginOverlay();
+    } else {
+      errorEl.textContent = 'パスワードが違います。';
+      errorEl.classList.remove('hidden');
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('loginPassword').focus();
+    }
+  });
+
+  document.getElementById('loginPassword').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('loginBtn').click();
+  });
+
+  // Setup button
+  document.getElementById('setupBtn').addEventListener('click', async () => {
+    const password = document.getElementById('setupPassword').value;
+    const confirm = document.getElementById('setupPasswordConfirm').value;
+    const errorEl = document.getElementById('setupError');
+
+    if (!password) {
+      errorEl.textContent = 'パスワードを入力してください。';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    if (password.length < 4) {
+      errorEl.textContent = 'パスワードは4文字以上で入力してください。';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    if (password !== confirm) {
+      errorEl.textContent = 'パスワードが一致しません。';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    const hash = await hashPassword(password);
+    localStorage.setItem(AUTH_KEY, hash);
+    localStorage.setItem(AUTH_CONFIGURED_KEY, 'true');
+    sessionStorage.setItem(AUTH_SESSION_KEY, '1');
+    errorEl.classList.add('hidden');
+    document.getElementById('setupPassword').value = '';
+    document.getElementById('setupPasswordConfirm').value = '';
+    hideLoginOverlay();
+  });
+
+  // Skip setup (no password)
+  document.getElementById('skipSetupBtn').addEventListener('click', () => {
+    localStorage.removeItem(AUTH_KEY);
+    localStorage.setItem(AUTH_CONFIGURED_KEY, 'true');
+    document.getElementById('setupPassword').value = '';
+    document.getElementById('setupPasswordConfirm').value = '';
+    document.getElementById('setupError').classList.add('hidden');
+    hideLoginOverlay();
+  });
+
+  // Logout button
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').classList.add('hidden');
+    document.getElementById('logoutBtn').style.display = 'none';
+    showLoginForm();
+    showLoginOverlay();
+  });
+
+  // Change password (in settings)
+  document.getElementById('changePasswordBtn').addEventListener('click', async () => {
+    const currentPw = document.getElementById('currentPassword').value;
+    const newPw = document.getElementById('newPassword').value;
+    const confirmPw = document.getElementById('newPasswordConfirm').value;
+    const msgEl = document.getElementById('passwordChangeMsg');
+
+    const storedHash = localStorage.getItem(AUTH_KEY);
+
+    // Verify current password if one is set
+    if (storedHash) {
+      const currentHash = await hashPassword(currentPw);
+      if (currentHash !== storedHash) {
+        msgEl.textContent = '現在のパスワードが違います。';
+        msgEl.style.color = 'var(--negative)';
+        msgEl.classList.remove('hidden');
+        return;
+      }
+    }
+
+    // Remove password
+    if (!newPw) {
+      localStorage.removeItem(AUTH_KEY);
+      localStorage.setItem(AUTH_CONFIGURED_KEY, 'true');
+      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('currentPassword').value = '';
+      msgEl.textContent = 'パスワードを削除しました。';
+      msgEl.style.color = 'var(--positive)';
+      msgEl.classList.remove('hidden');
+      return;
+    }
+
+    if (newPw.length < 4) {
+      msgEl.textContent = '新しいパスワードは4文字以上で入力してください。';
+      msgEl.style.color = 'var(--negative)';
+      msgEl.classList.remove('hidden');
+      return;
+    }
+
+    if (newPw !== confirmPw) {
+      msgEl.textContent = 'パスワードが一致しません。';
+      msgEl.style.color = 'var(--negative)';
+      msgEl.classList.remove('hidden');
+      return;
+    }
+
+    const newHash = await hashPassword(newPw);
+    localStorage.setItem(AUTH_KEY, newHash);
+    localStorage.setItem(AUTH_CONFIGURED_KEY, 'true');
+    sessionStorage.setItem(AUTH_SESSION_KEY, '1');
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('newPasswordConfirm').value = '';
+    msgEl.textContent = 'パスワードを変更しました。';
+    msgEl.style.color = 'var(--positive)';
+    msgEl.classList.remove('hidden');
+    document.getElementById('logoutBtn').style.display = '';
+  });
+
   // ----- 初期化 -----
   initSettings();
   renderEntryTable();
   renderNisaTable();
+  checkAuth();
 })();

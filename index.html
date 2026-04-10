@@ -8,6 +8,35 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
+  <!-- ===== ログイン画面 ===== -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-box">
+      <div class="login-logo">
+        <h1>高配当株<br>管理シート</h1>
+      </div>
+
+      <!-- ログインフォーム -->
+      <div id="loginForm" class="login-section hidden">
+        <h2 class="login-title">ログイン</h2>
+        <p class="login-desc">パスワードを入力してください。</p>
+        <input type="password" id="loginPassword" class="login-input" placeholder="パスワード" autocomplete="current-password">
+        <p id="loginError" class="login-error hidden">パスワードが違います。</p>
+        <button id="loginBtn" class="btn btn-primary login-btn">ログイン</button>
+      </div>
+
+      <!-- 初回セットアップフォーム -->
+      <div id="setupForm" class="login-section hidden">
+        <h2 class="login-title">パスワード設定</h2>
+        <p class="login-desc">パスワードを設定するか、スキップして開始できます。</p>
+        <input type="password" id="setupPassword" class="login-input" placeholder="パスワード（4文字以上）" autocomplete="new-password">
+        <input type="password" id="setupPasswordConfirm" class="login-input" placeholder="パスワード（確認）" autocomplete="new-password">
+        <p id="setupError" class="login-error hidden"></p>
+        <button id="setupBtn" class="btn btn-primary login-btn">設定して開始</button>
+        <button id="skipSetupBtn" class="btn btn-outline login-btn-skip">スキップ（パスワードなし）</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ナビゲーション -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -23,6 +52,7 @@
       <button id="exportBtn" class="btn btn-outline">データ書出</button>
       <button id="importBtn" class="btn btn-outline">データ読込</button>
       <input type="file" id="importFile" accept=".json" style="display:none">
+      <button id="logoutBtn" class="btn btn-outline" style="display:none">ログアウト</button>
     </div>
   </nav>
 
@@ -94,6 +124,28 @@
             </table>
             <button class="btn btn-small" id="addStockTypeBtn">+ 行追加</button>
           </div>
+        </div>
+      </div>
+
+      <!-- パスワード設定 -->
+      <div class="setting-card full-width">
+        <h3>パスワード設定</h3>
+        <p class="setting-note">※パスワードを設定するとログイン画面が表示されます。新しいパスワードを空欄にすると削除できます。</p>
+        <div class="password-form">
+          <div class="password-form-row">
+            <label>現在のパスワード</label>
+            <input type="password" id="currentPassword" class="setting-password-input" placeholder="現在のパスワード（未設定の場合は空欄）" autocomplete="current-password">
+          </div>
+          <div class="password-form-row">
+            <label>新しいパスワード</label>
+            <input type="password" id="newPassword" class="setting-password-input" placeholder="新しいパスワード（空欄で削除）" autocomplete="new-password">
+          </div>
+          <div class="password-form-row">
+            <label>確認</label>
+            <input type="password" id="newPasswordConfirm" class="setting-password-input" placeholder="新しいパスワード（確認）" autocomplete="new-password">
+          </div>
+          <p id="passwordChangeMsg" class="password-change-msg hidden"></p>
+          <button id="changePasswordBtn" class="btn btn-primary">パスワード変更</button>
         </div>
       </div>
     </div>

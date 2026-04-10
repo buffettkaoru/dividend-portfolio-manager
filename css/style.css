@@ -669,3 +669,152 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Login Overlay ===== */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--navy-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.login-overlay.hidden {
+  display: none;
+}
+
+.login-box {
+  background: var(--navy);
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+  padding: 2.5rem 2rem;
+  width: 340px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.login-logo h1 {
+  font-size: 1.4rem;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+}
+
+.login-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.login-section.hidden {
+  display: none;
+}
+
+.login-title {
+  font-size: 1.1rem;
+  color: var(--white);
+  text-align: center;
+  margin-bottom: 0.2rem;
+}
+
+.login-desc {
+  font-size: 0.85rem;
+  color: var(--gray);
+  text-align: center;
+}
+
+.login-input {
+  width: 100%;
+  background: var(--navy-dark);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.login-input:focus {
+  border-color: var(--gold);
+}
+
+.login-error {
+  color: var(--negative);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.login-error.hidden {
+  display: none;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 0.7rem;
+  font-size: 0.95rem;
+}
+
+.login-btn-skip {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--gray);
+  border-color: var(--border);
+}
+
+.login-btn-skip:hover {
+  color: var(--white);
+  border-color: var(--gold);
+}
+
+/* ===== Password Settings ===== */
+.password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-width: 480px;
+  margin-top: 0.5rem;
+}
+
+.password-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.password-form-row label {
+  font-size: 0.85rem;
+  color: var(--gray);
+}
+
+.setting-password-input {
+  background: var(--navy-dark);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+  max-width: 300px;
+}
+
+.setting-password-input:focus {
+  border-color: var(--gold);
+}
+
+.password-change-msg {
+  font-size: 0.85rem;
+}
+
+.password-change-msg.hidden {
+  display: none;
+}
