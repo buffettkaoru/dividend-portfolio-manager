@@ -611,6 +611,194 @@
     renderTop20(valid, totalDiv);
   });
 
+  // ----- CSV読込（SBI証券） -----
+  document.getElementById("csvImportBtn").addEventListener("click", () => {
+    document.getElementById("csvFile").click();
+  });
+
+  function showCsvMessage(text, isError) {
+    const el = document.getElementById("csvMessage");
+    el.style.display = "block";
+    el.style.background = isError ? "rgba(229,57,53,0.2)" : "rgba(76,175,80,0.2)";
+    el.style.border = isError ? "1px solid #e53935" : "1px solid #4caf50";
+    el.style.color = isError ? "#ff8a80" : "#a5d6a7";
+    el.textContent = text;
+    setTimeout(() => { el.style.display = "none"; }, 5000);
+  }
+
+  function parseSbiCsv(text) {
+    const lines = text.split(/\r?\n/);
+    const allStocks = [];   // 全銘柄（特定+NISA合算用）
+    const nisaList = [];    // NISA銘柄
+    let currentSection = ""; // 現在のセクション
+
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i].trim();
+
+      // セクション判定
+      if (line.includes("特定預り")) {
+        currentSection = "tokutei";
+      } else if (line.includes("NISA預り") && line.includes("成長投資枠")) {
+        currentSection = "nisa";
+      } else if (line.includes("つみたて投資枠") || line.includes("投資信託")) {
+        currentSection = "skip";
+      }
+
+      // ヘッダー行を見つけたらデータを読む
+      if (line.includes("銘柄コード") && line.includes("銘柄名称")) {
+        const headers = line.split(",").map((h) => h.replace(/"/g, "").trim());
+        const col = {};
+        headers.forEach((h, idx) => {
+          if (h === "銘柄コード") col.code = idx;
+          else if (h === "銘柄名称") col.name = idx;
+          else if (h === "保有株数") col.shares = idx;
+          else if (h === "取得単価") col.purchasePrice = idx;
+          else if (h === "現在値") col.currentPrice = idx;
+        });
+
+        i++;
+        // データ行を読む
+        while (i < lines.length) {
+          const dataLine = lines[i].trim();
+          if (!dataLine || dataLine.includes("合計") || dataLine.includes("評価額")
+              || (dataLine.includes("株式") && dataLine.includes("預り"))
+              || dataLine.includes("投資信託") || dataLine.includes("ファンド名")) {
+            break;
+          }
+
+          const cols = dataLine.split(",").map((c) => c.replace(/"/g, "").trim());
+          const code = col.code != null ? cols[col.code] : "";
+          if (!code || !/^(\d{4}|[A-Z]{1,5})$/.test(code)) { i++; continue; }
+
+          const name = col.name != null ? (cols[col.name] || "") : "";
+          const shares = col.shares != null ? parseFloat(cols[col.shares].replace(/[,+]/g, "")) : 0;
+          const purchasePrice = col.purchasePrice != null ? parseFloat(cols[col.purchasePrice].replace(/[,+]/g, "")) : null;
+          const currentPrice = col.currentPrice != null ? parseFloat(cols[col.currentPrice].replace(/[,+]/g, "")) : null;
+
+          if (!isNaN(shares) && shares > 0) {
+            allStocks.push({
+              code, name,
+              shares,
+              purchasePrice: isNaN(purchasePrice) ? null : purchasePrice,
+              currentPrice: isNaN(currentPrice) ? null : currentPrice,
+              section: currentSection
+            });
+
+            if (currentSection === "nisa") {
+              nisaList.push({ code, shares });
+            }
+          }
+          i++;
+        }
+        continue;
+      }
+      i++;
+    }
+
+    // 同一銘柄を合算（特定+NISAの合計保有数、取得単価は加重平均）
+    const merged = {};
+    allStocks.forEach((s) => {
+      if (merged[s.code]) {
+        const m = merged[s.code];
+        const oldTotal = (m.purchasePrice || 0) * m.shares;
+        const newTotal = (s.purchasePrice || 0) * s.shares;
+        m.shares += s.shares;
+        m.purchasePrice = m.shares > 0 ? (oldTotal + newTotal) / m.shares : null;
+        if (s.currentPrice != null) m.currentPrice = s.currentPrice;
+        if (s.name && !m.name) m.name = s.name;
+      } else {
+        const divData = STOCK_DIVIDEND_MAP[s.code];
+        merged[s.code] = {
+          code: s.code,
+          name: s.name,
+          industry: STOCK_INDUSTRY_MAP[s.code] || "",
+          shares: s.shares,
+          purchasePrice: s.purchasePrice,
+          currentPrice: s.currentPrice,
+          divPerShare: divData ? divData.div : null,
+          divMonths: divData ? divData.months : ""
+        };
+      }
+    });
+
+    return {
+      stocks: Object.values(merged),
+      nisa: nisaList
+    };
+  }
+
+  document.getElementById("csvFile").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      let text = ev.target.result;
+      const result = parseSbiCsv(text);
+      if (result.stocks.length === 0) {
+        // Shift_JISで再読込を試す
+        const reader2 = new FileReader();
+        reader2.onload = (ev2) => {
+          const result2 = parseSbiCsv(ev2.target.result);
+          if (result2.stocks.length === 0) {
+            showCsvMessage("CSVから銘柄を読み取れませんでした。SBI証券の「保有証券」CSVか確認してください。", true);
+            return;
+          }
+          mergeImportedStocks(result2);
+        };
+        reader2.readAsText(file, "Shift_JIS");
+        return;
+      }
+      mergeImportedStocks(result);
+    };
+    reader.readAsText(file, "UTF-8");
+    e.target.value = "";
+  });
+
+  function mergeImportedStocks(result) {
+    let added = 0;
+    let updated = 0;
+
+    // 銘柄データの統合
+    result.stocks.forEach((imp) => {
+      const existing = stocks.find((s) => s.code === imp.code);
+      if (existing) {
+        existing.shares = imp.shares;
+        if (imp.purchasePrice != null) existing.purchasePrice = imp.purchasePrice;
+        if (imp.currentPrice != null) existing.currentPrice = imp.currentPrice;
+        if (imp.name && !existing.name) existing.name = imp.name;
+        if (!existing.industry && STOCK_INDUSTRY_MAP[imp.code]) existing.industry = STOCK_INDUSTRY_MAP[imp.code];
+        updated++;
+      } else {
+        stocks.push(imp);
+        added++;
+      }
+    });
+    saveData(STORAGE_KEYS.stocks, stocks);
+    renderEntryTable();
+
+    // NISAデータの統合
+    let nisaAdded = 0;
+    result.nisa.forEach((n) => {
+      const existing = nisaItems.find((ni) => ni.code === n.code);
+      if (existing) {
+        existing.shares = n.shares;
+      } else {
+        nisaItems.push(n);
+        nisaAdded++;
+      }
+    });
+    if (result.nisa.length > 0) {
+      saveData(STORAGE_KEYS.nisa, nisaItems);
+      renderNisaTable();
+    }
+
+    const msg = `CSV読込完了: ${added}件追加、${updated}件更新` +
+      (result.nisa.length > 0 ? `、NISA ${result.nisa.length}件反映` : "");
+    showCsvMessage(msg, false);
+  }
+
   // ----- エクスポート / インポート -----
   document.getElementById("exportBtn").addEventListener("click", () => {
     const exportData = {
@@ -660,6 +848,27 @@
   });
 
   // ----- 初期化 -----
+  // 業種・配当金が未設定の銘柄に自動補完
+  let dataUpdated = false;
+  stocks.forEach((s) => {
+    if (STOCK_INDUSTRY_MAP[s.code] && !s.industry) {
+      s.industry = STOCK_INDUSTRY_MAP[s.code];
+      dataUpdated = true;
+    }
+    const divData = STOCK_DIVIDEND_MAP[s.code];
+    if (divData) {
+      if (!s.divPerShare && divData.div > 0) {
+        s.divPerShare = divData.div;
+        dataUpdated = true;
+      }
+      if (!s.divMonths && divData.months) {
+        s.divMonths = divData.months;
+        dataUpdated = true;
+      }
+    }
+  });
+  if (dataUpdated) saveData(STORAGE_KEYS.stocks, stocks);
+
   initSettings();
   renderEntryTable();
   renderNisaTable();

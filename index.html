@@ -210,7 +210,10 @@
         <div class="entry-toolbar">
           <button class="btn btn-primary" id="addRowBtn">+ 銘柄追加</button>
           <button class="btn btn-danger" id="deleteSelectedBtn">選択削除</button>
+          <button class="btn btn-csv" id="csvImportBtn">CSV読込（SBI証券）</button>
+          <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
         </div>
+        <div id="csvMessage" style="display:none; margin:8px 0; padding:10px; border-radius:6px; font-size:0.85rem;"></div>
 
         <div class="table-wrapper">
           <table id="entryTable">

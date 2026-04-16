@@ -164,6 +164,12 @@ body {
   color: #fff;
 }
 
+.btn-csv {
+  background: #2196F3;
+  color: #fff;
+  font-weight: 600;
+}
+
 .btn-small {
   padding: 0.3rem 0.8rem;
   font-size: 0.8rem;
