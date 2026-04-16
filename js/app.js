@@ -42,6 +42,7 @@
       pages.forEach((p) => p.classList.remove("active"));
       document.getElementById("page-" + target).classList.add("active");
       if (target === "dashboard") renderDashboard();
+      if (target === "portfolio") renderPortfolioOverview();
     });
   });
 
@@ -659,8 +660,404 @@
     e.target.value = "";
   });
 
+  // ----- ポートフォリオ概要ページ -----
+  let pfSectorChartInstance = null;
+
+  function buildAllHoldings() {
+    const holdings = [];
+    PORTFOLIO_TOKUTEI.forEach(s => {
+      holdings.push({
+        code: s.code, name: s.name, industry: s.industry,
+        shares: s.shares, purchasePrice: s.purchasePrice, currentPrice: s.currentPrice,
+        costTotal: s.purchasePrice * s.shares,
+        evalTotal: s.currentPrice * s.shares,
+        pl: (s.currentPrice - s.purchasePrice) * s.shares,
+        plPct: ((s.currentPrice - s.purchasePrice) / s.purchasePrice) * 100,
+        account: "特定"
+      });
+    });
+    PORTFOLIO_NISA_GROWTH.forEach(s => {
+      holdings.push({
+        code: s.code, name: s.name, industry: s.industry,
+        shares: s.shares, purchasePrice: s.purchasePrice, currentPrice: s.currentPrice,
+        costTotal: s.purchasePrice * s.shares,
+        evalTotal: s.currentPrice * s.shares,
+        pl: (s.currentPrice - s.purchasePrice) * s.shares,
+        plPct: ((s.currentPrice - s.purchasePrice) / s.purchasePrice) * 100,
+        account: "NISA成長"
+      });
+    });
+    PORTFOLIO_NISA_TSUMITATE.forEach(f => {
+      holdings.push({
+        code: "-", name: f.name, industry: "投資信託",
+        shares: f.units, purchasePrice: f.purchasePrice, currentPrice: f.nav,
+        costTotal: f.costTotal, evalTotal: f.evalTotal,
+        pl: f.pl, plPct: (f.pl / f.costTotal) * 100,
+        account: "NISAつみたて"
+      });
+    });
+    return holdings;
+  }
+
+  function pfFormatNum(n) {
+    if (n == null || isNaN(n)) return "0";
+    return Math.round(n).toLocaleString("ja-JP");
+  }
+
+  function pfFormatPrice(n) {
+    if (n == null || isNaN(n)) return "0";
+    if (n % 1 !== 0) return n.toLocaleString("ja-JP", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return n.toLocaleString("ja-JP");
+  }
+
+  function accountBadge(account) {
+    if (account === "特定") return '<span class="pf-badge pf-badge-tokutei">特定</span>';
+    if (account === "NISA成長") return '<span class="pf-badge pf-badge-nisa">NISA成長</span>';
+    return '<span class="pf-badge pf-badge-tsumitate">つみたて</span>';
+  }
+
+  function renderPortfolioOverview() {
+    const all = buildAllHoldings();
+    const totalEval = all.reduce((s, h) => s + h.evalTotal, 0);
+    const totalCost = all.reduce((s, h) => s + h.costTotal, 0);
+    const totalPL = totalEval - totalCost;
+    const totalPLPct = totalCost > 0 ? (totalPL / totalCost) * 100 : 0;
+
+    // Unique stock count (by code, excluding "-")
+    const uniqueCodes = new Set(all.filter(h => h.code !== "-").map(h => h.code));
+
+    // Summary cards
+    document.getElementById("pfTotalAssets").innerHTML = pfFormatNum(totalEval) + '<span class="unit">円</span>';
+    const plEl = document.getElementById("pfTotalPL");
+    const plSign = totalPL >= 0 ? "+" : "";
+    plEl.innerHTML = plSign + pfFormatNum(totalPL) + '<span class="unit">円</span>';
+    plEl.className = "big-number " + (totalPL >= 0 ? "positive" : "negative");
+    document.getElementById("pfTotalPLPct").textContent = "(" + plSign + totalPLPct.toFixed(2) + "%)";
+    document.getElementById("pfTotalPLPct").className = "pf-sub " + (totalPL >= 0 ? "positive" : "negative");
+    document.getElementById("pfTotalCost").innerHTML = pfFormatNum(totalCost) + '<span class="unit">円</span>';
+    document.getElementById("pfStockCount").innerHTML = uniqueCodes.size + '<span class="unit">銘柄</span>';
+    document.getElementById("pfStockCountSub").textContent = "(" + all.length + "エントリ / 3口座)";
+
+    // Account breakdown
+    renderAccountTable(all, totalEval);
+
+    // Sector breakdown
+    renderSectorAnalysis(all, totalEval);
+
+    // Holdings table
+    renderPfHoldings(all, totalEval);
+
+    // Loss table
+    renderLossTable(all);
+
+    // Analysis
+    renderAnalysis(all, totalEval);
+  }
+
+  function renderAccountTable(all, totalEval) {
+    const accounts = [
+      { label: "特定預り", key: "特定" },
+      { label: "NISA成長投資枠", key: "NISA成長" },
+      { label: "NISAつみたて投資枠", key: "NISAつみたて" }
+    ];
+    const tbody = document.querySelector("#pfAccountTable tbody");
+    const tfoot = document.querySelector("#pfAccountTable tfoot");
+    let totalCostAll = 0, totalEvalAll = 0, totalCount = 0;
+
+    tbody.innerHTML = accounts.map(a => {
+      const items = all.filter(h => h.account === a.key);
+      const cost = items.reduce((s, h) => s + h.costTotal, 0);
+      const ev = items.reduce((s, h) => s + h.evalTotal, 0);
+      const pl = ev - cost;
+      const pct = totalEval > 0 ? (ev / totalEval) * 100 : 0;
+      const plPct = cost > 0 ? (pl / cost) * 100 : 0;
+      totalCostAll += cost;
+      totalEvalAll += ev;
+      totalCount += items.length;
+      const plClass = pl >= 0 ? "positive" : "negative";
+      const plSign = pl >= 0 ? "+" : "";
+      return `<tr>
+        <td>${a.label}</td>
+        <td class="num">${items.length}</td>
+        <td class="num">${pfFormatNum(cost)}円</td>
+        <td class="num">${pfFormatNum(ev)}円</td>
+        <td class="num">${pct.toFixed(1)}%</td>
+        <td class="num ${plClass}">${plSign}${pfFormatNum(pl)}円</td>
+        <td class="num ${plClass}">${plSign}${plPct.toFixed(2)}%</td>
+      </tr>`;
+    }).join("");
+
+    const totalPLAll = totalEvalAll - totalCostAll;
+    const totalPLPctAll = totalCostAll > 0 ? (totalPLAll / totalCostAll) * 100 : 0;
+    const plClassAll = totalPLAll >= 0 ? "positive" : "negative";
+    const plSignAll = totalPLAll >= 0 ? "+" : "";
+    tfoot.innerHTML = `<tr>
+      <td>合計</td>
+      <td class="num">${totalCount}</td>
+      <td class="num">${pfFormatNum(totalCostAll)}円</td>
+      <td class="num">${pfFormatNum(totalEvalAll)}円</td>
+      <td class="num">100.0%</td>
+      <td class="num ${plClassAll}">${plSignAll}${pfFormatNum(totalPLAll)}円</td>
+      <td class="num ${plClassAll}">${plSignAll}${totalPLPctAll.toFixed(2)}%</td>
+    </tr>`;
+  }
+
+  function renderSectorAnalysis(all, totalEval) {
+    // Merge by sector
+    const sectorMap = {};
+    all.forEach(h => {
+      const sec = h.industry || "その他";
+      if (!sectorMap[sec]) sectorMap[sec] = { eval: 0, cost: 0, codes: new Set() };
+      sectorMap[sec].eval += h.evalTotal;
+      sectorMap[sec].cost += h.costTotal;
+      sectorMap[sec].codes.add(h.code);
+    });
+
+    const sectors = Object.entries(sectorMap)
+      .map(([name, d]) => ({
+        name,
+        eval: d.eval,
+        cost: d.cost,
+        pl: d.eval - d.cost,
+        count: d.codes.size,
+        pct: totalEval > 0 ? (d.eval / totalEval) * 100 : 0
+      }))
+      .sort((a, b) => b.eval - a.eval);
+
+    // Table
+    const tbody = document.querySelector("#pfSectorTable tbody");
+    tbody.innerHTML = sectors.map(s => {
+      const plClass = s.pl >= 0 ? "positive" : "negative";
+      const plSign = s.pl >= 0 ? "+" : "";
+      return `<tr>
+        <td>${s.name}</td>
+        <td class="num">${s.count}</td>
+        <td class="num">${pfFormatNum(s.eval)}円</td>
+        <td class="num">${s.pct.toFixed(1)}%</td>
+        <td class="num ${plClass}">${plSign}${pfFormatNum(s.pl)}円</td>
+      </tr>`;
+    }).join("");
+
+    // Chart
+    const ctx = document.getElementById("pfSectorChart").getContext("2d");
+    if (pfSectorChartInstance) pfSectorChartInstance.destroy();
+    pfSectorChartInstance = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: sectors.map(s => s.name),
+        datasets: [{
+          data: sectors.map(s => s.eval),
+          backgroundColor: CHART_COLORS.slice(0, sectors.length),
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "right",
+            labels: { color: "#b0b8c8", font: { size: 11 }, padding: 6 }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const pct = totalEval > 0 ? ((ctx.parsed / totalEval) * 100).toFixed(1) : 0;
+                return `${ctx.label}: ${pfFormatNum(ctx.parsed)}円 (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Update sector filter
+    const filter = document.getElementById("pfSectorFilter");
+    const current = filter.value;
+    filter.innerHTML = '<option value="all">全セクター</option>';
+    sectors.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.name;
+      opt.textContent = s.name + " (" + s.count + ")";
+      if (s.name === current) opt.selected = true;
+      filter.appendChild(opt);
+    });
+  }
+
+  function renderPfHoldings(all, totalEval) {
+    const sectorFilter = document.getElementById("pfSectorFilter").value;
+    const accountFilter = document.getElementById("pfAccountFilter").value;
+    const sortField = document.getElementById("pfSortField").value;
+
+    let filtered = all.slice();
+    if (sectorFilter !== "all") filtered = filtered.filter(h => h.industry === sectorFilter);
+    if (accountFilter !== "all") filtered = filtered.filter(h => h.account === accountFilter);
+
+    // Sort
+    if (sortField === "evalTotal") filtered.sort((a, b) => b.evalTotal - a.evalTotal);
+    else if (sortField === "pl") filtered.sort((a, b) => b.pl - a.pl);
+    else if (sortField === "plPct") filtered.sort((a, b) => b.plPct - a.plPct);
+    else if (sortField === "sector") filtered.sort((a, b) => a.industry.localeCompare(b.industry) || b.evalTotal - a.evalTotal);
+    else if (sortField === "code") filtered.sort((a, b) => a.code.localeCompare(b.code));
+
+    const tbody = document.querySelector("#pfHoldingsTable tbody");
+    tbody.innerHTML = filtered.map(h => {
+      const pct = totalEval > 0 ? (h.evalTotal / totalEval) * 100 : 0;
+      const plClass = h.pl >= 0 ? "positive" : "negative";
+      const plSign = h.pl >= 0 ? "+" : "";
+      return `<tr>
+        <td>${h.code}</td>
+        <td>${h.name}</td>
+        <td>${h.industry}</td>
+        <td>${accountBadge(h.account)}</td>
+        <td class="num">${pfFormatNum(h.shares)}</td>
+        <td class="num">${pfFormatPrice(h.purchasePrice)}</td>
+        <td class="num">${pfFormatPrice(h.currentPrice)}</td>
+        <td class="num">${pfFormatNum(h.evalTotal)}円</td>
+        <td class="num">${pct.toFixed(2)}%</td>
+        <td class="num ${plClass}">${plSign}${pfFormatNum(h.pl)}円</td>
+        <td class="num ${plClass}">${plSign}${h.plPct.toFixed(1)}%</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function renderLossTable(all) {
+    const losses = all.filter(h => h.pl < 0).sort((a, b) => a.pl - b.pl);
+    const tbody = document.querySelector("#pfLossTable tbody");
+    if (losses.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">含み損銘柄なし</td></tr>';
+      return;
+    }
+    tbody.innerHTML = losses.map(h => {
+      return `<tr>
+        <td>${h.code}</td>
+        <td>${h.name}</td>
+        <td>${accountBadge(h.account)}</td>
+        <td class="num">${pfFormatNum(h.evalTotal)}円</td>
+        <td class="num negative">${pfFormatNum(h.pl)}円</td>
+        <td class="num negative">${h.plPct.toFixed(1)}%</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function renderAnalysis(all, totalEval) {
+    const container = document.getElementById("pfAnalysis");
+
+    // Sector concentration
+    const sectorMap = {};
+    all.forEach(h => {
+      const sec = h.industry || "その他";
+      sectorMap[sec] = (sectorMap[sec] || 0) + h.evalTotal;
+    });
+    const sectorPcts = Object.entries(sectorMap).map(([k, v]) => ({ name: k, pct: (v / totalEval) * 100 })).sort((a, b) => b.pct - a.pct);
+    const topConcentrated = sectorPcts.filter(s => s.pct >= 8);
+
+    // Missing sectors
+    const presentSectors = new Set(all.map(h => h.industry));
+    const majorMissing = [];
+    if (!presentSectors.has("医薬品") || sectorMap["医薬品"] / totalEval < 0.03) majorMissing.push("医薬品（ヘルスケア）の比率が低い");
+    if (!presentSectors.has("小売業")) majorMissing.push("小売業セクターが未保有");
+    if (!presentSectors.has("精密機器")) majorMissing.push("精密機器セクターが未保有");
+    if (!presentSectors.has("輸送用機器")) majorMissing.push("輸送用機器（自動車）セクターが未保有");
+    if (!presentSectors.has("海運業")) majorMissing.push("海運業セクターが未保有");
+    if (!presentSectors.has("空運業")) majorMissing.push("空運業セクターが未保有");
+    if (!presentSectors.has("非鉄金属")) majorMissing.push("非鉄金属セクターが未保有");
+    if (!presentSectors.has("鉱業")) majorMissing.push("鉱業セクターが未保有");
+
+    // International exposure
+    const tsumitateEval = PORTFOLIO_NISA_TSUMITATE.reduce((s, f) => s + f.evalTotal, 0);
+    const intlPct = (tsumitateEval / totalEval) * 100;
+
+    // Single stock concentration
+    const stockMap = {};
+    all.forEach(h => {
+      const key = h.code + "_" + h.name;
+      stockMap[key] = (stockMap[key] || 0) + h.evalTotal;
+    });
+    const topStocks = Object.entries(stockMap)
+      .map(([k, v]) => ({ name: k.split("_")[1], pct: (v / totalEval) * 100 }))
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 5);
+
+    // Financial sector heavy
+    const financeSectors = ["銀行業", "保険業", "その他金融業"];
+    const financeTotal = financeSectors.reduce((s, sec) => s + (sectorMap[sec] || 0), 0);
+    const financePct = (financeTotal / totalEval) * 100;
+
+    container.innerHTML = `
+      <div class="pf-card pf-card-warn">
+        <h4>集中リスク（セクター）</h4>
+        <ul>
+          ${topConcentrated.map(s => `<li>${s.name}: ${s.pct.toFixed(1)}%</li>`).join("")}
+          <li>金融セクター合計（銀行+保険+その他金融）: ${financePct.toFixed(1)}%</li>
+        </ul>
+      </div>
+      <div class="pf-card pf-card-warn">
+        <h4>個別銘柄集中 Top5</h4>
+        <ul>
+          ${topStocks.map(s => `<li>${s.name}: ${s.pct.toFixed(1)}%</li>`).join("")}
+        </ul>
+      </div>
+      <div class="pf-card pf-card-info">
+        <h4>不足しているセクター・資産</h4>
+        <ul>
+          ${majorMissing.map(m => `<li>${m}</li>`).join("")}
+          <li>海外資産比率が極めて低い（${intlPct.toFixed(2)}%）。S&P500のつみたて額を増やすか、先進国株式・新興国株式ファンドの追加を検討</li>
+          <li>債券（国内債・外国債）への配分がゼロ。年齢やリスク許容度に応じて検討</li>
+          <li>REITは保有あるが比率が低め。分散目的なら追加検討</li>
+          <li>半導体・AI関連（東京エレクトロン、レーザーテック等）のテクノロジー成長株が不在</li>
+        </ul>
+      </div>
+      <div class="pf-card pf-card-good">
+        <h4>ポートフォリオの強み</h4>
+        <ul>
+          <li>80銘柄と幅広く分散。個別銘柄リスクは比較的低い</li>
+          <li>総合商社5社（伊藤忠・丸紅・三井物産・住友商・三菱商事）を全て保有</li>
+          <li>メガバンク3行+保険3社で金融セクターを厚く確保</li>
+          <li>含み益率 +45.7% と良好なパフォーマンス</li>
+          <li>通信セクター（NTT・KDDI・沖縄セルラー）でディフェンシブ配当を確保</li>
+          <li>NISA枠を活用して成長投資枠・つみたて投資枠の両方を利用中</li>
+        </ul>
+      </div>
+    `;
+  }
+
+  // Portfolio filter/sort event listeners
+  ["pfSectorFilter", "pfAccountFilter", "pfSortField"].forEach(id => {
+    document.getElementById(id).addEventListener("change", () => {
+      const all = buildAllHoldings();
+      const totalEval = all.reduce((s, h) => s + h.evalTotal, 0);
+      renderPfHoldings(all, totalEval);
+    });
+  });
+
+  // ----- 初期データ自動読み込み -----
+  if (stocks.length === 0) {
+    // Merge TOKUTEI + NISA-only stocks into stocks array for other pages
+    const allCodes = new Set(PORTFOLIO_TOKUTEI.map(s => s.code));
+    const combined = [...PORTFOLIO_TOKUTEI];
+    PORTFOLIO_NISA_GROWTH.forEach(s => {
+      if (!allCodes.has(s.code)) {
+        combined.push(s);
+        allCodes.add(s.code);
+      }
+    });
+    stocks = combined.map(s => ({
+      code: s.code, name: s.name, industry: s.industry,
+      shares: s.shares, purchasePrice: s.purchasePrice,
+      currentPrice: s.currentPrice, divPerShare: null, divMonths: ""
+    }));
+    saveData(STORAGE_KEYS.stocks, stocks);
+  }
+
+  if (nisaItems.length === 0) {
+    nisaItems = PORTFOLIO_NISA_GROWTH.map(s => ({ code: s.code, shares: s.shares }));
+    saveData(STORAGE_KEYS.nisa, nisaItems);
+  }
+
   // ----- 初期化 -----
   initSettings();
   renderEntryTable();
   renderNisaTable();
+  renderPortfolioOverview();
 })();

@@ -616,6 +616,187 @@ footer {
   font-size: 0.8rem;
 }
 
+/* ===== Portfolio Overview ===== */
+.pf-summary .summary-card {
+  min-height: 110px;
+}
+
+.pf-sub {
+  font-size: 0.85rem;
+  color: var(--gray);
+  margin-top: 0.3rem;
+}
+
+.pf-sector-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.pf-sector-chart-card {
+  min-height: 340px;
+}
+
+.pf-sector-table-card {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.pf-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.pf-filter-row label {
+  font-size: 0.82rem;
+  color: var(--gray);
+}
+
+.pf-filter-row select {
+  background: var(--navy);
+  color: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.82rem;
+}
+
+.pf-th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.pf-th-sortable:hover {
+  color: var(--gold);
+}
+
+.pf-th-sortable::after {
+  content: " \25B4\25BE";
+  font-size: 0.65rem;
+  opacity: 0.5;
+}
+
+.pf-loss-section {
+  border-color: var(--negative);
+}
+
+.pf-loss-section h3 {
+  color: var(--negative);
+}
+
+.pf-analysis-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.pf-analysis-section h3 {
+  font-size: 0.95rem;
+  color: var(--gold-light);
+  margin-bottom: 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.pf-analysis-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+.pf-card {
+  background: var(--navy);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.pf-card h4 {
+  font-size: 0.88rem;
+  color: var(--gold-light);
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.pf-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.pf-card li {
+  font-size: 0.82rem;
+  color: var(--white);
+  padding: 0.25rem 0;
+  line-height: 1.5;
+}
+
+.pf-card li::before {
+  content: "\25B8 ";
+  color: var(--gold);
+}
+
+.pf-card.pf-card-warn {
+  border-color: #e67e22;
+}
+
+.pf-card.pf-card-warn h4 {
+  color: #e67e22;
+}
+
+.pf-card.pf-card-good {
+  border-color: var(--positive);
+}
+
+.pf-card.pf-card-good h4 {
+  color: var(--positive);
+}
+
+.pf-card.pf-card-info {
+  border-color: #5b9bd5;
+}
+
+.pf-card.pf-card-info h4 {
+  color: #5b9bd5;
+}
+
+.pf-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.pf-badge-tokutei {
+  background: #2e4470;
+  color: #8bb8e8;
+}
+
+.pf-badge-nisa {
+  background: #2e6230;
+  color: #8be88b;
+}
+
+.pf-badge-tsumitate {
+  background: #5c4a2e;
+  color: #e8c88b;
+}
+
+tfoot td {
+  font-weight: 700;
+  padding: 0.55rem 0.7rem;
+  border-top: 2px solid var(--gold);
+  background: var(--table-header);
+  color: var(--gold-light);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
   .sidebar {
@@ -661,6 +842,14 @@ footer {
 
   .big-number {
     font-size: 1.4rem;
+  }
+
+  .pf-sector-section {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-analysis-content {
+    grid-template-columns: 1fr;
   }
 }
 

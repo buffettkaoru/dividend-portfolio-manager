@@ -14,7 +14,8 @@
       <h1>高配当株<br>管理シート</h1>
     </div>
     <ul class="nav-list">
-      <li><a href="#" class="nav-link active" data-page="settings">設定</a></li>
+      <li><a href="#" class="nav-link active" data-page="portfolio">ポートフォリオ概要</a></li>
+      <li><a href="#" class="nav-link" data-page="settings">設定</a></li>
       <li><a href="#" class="nav-link" data-page="dashboard">管理シート</a></li>
       <li><a href="#" class="nav-link" data-page="entry">銘柄入力</a></li>
       <li><a href="#" class="nav-link" data-page="nisa">NISA管理</a></li>
@@ -28,8 +29,137 @@
 
   <!-- メインコンテンツ -->
   <div class="main-content">
+    <!-- ===== ポートフォリオ概要ページ ===== -->
+    <div class="page active" id="page-portfolio">
+      <h2 class="page-title">ポートフォリオ概要</h2>
+
+      <!-- 総合サマリー -->
+      <section class="summary-section pf-summary">
+        <div class="summary-card">
+          <h3>総資産額</h3>
+          <p class="big-number" id="pfTotalAssets">-<span class="unit">円</span></p>
+        </div>
+        <div class="summary-card">
+          <h3>含み損益</h3>
+          <p class="big-number" id="pfTotalPL">-<span class="unit">円</span></p>
+          <p class="pf-sub" id="pfTotalPLPct"></p>
+        </div>
+        <div class="summary-card">
+          <h3>取得総額</h3>
+          <p class="big-number" id="pfTotalCost">-<span class="unit">円</span></p>
+        </div>
+        <div class="summary-card">
+          <h3>保有銘柄数</h3>
+          <p class="big-number" id="pfStockCount">-<span class="unit">銘柄</span></p>
+          <p class="pf-sub" id="pfStockCountSub"></p>
+        </div>
+      </section>
+
+      <!-- 口座別内訳 -->
+      <section class="table-section">
+        <h3>口座別内訳</h3>
+        <div class="table-wrapper">
+          <table id="pfAccountTable">
+            <thead>
+              <tr>
+                <th>口座</th><th>銘柄数</th><th>取得総額</th><th>評価額</th><th>構成比</th><th>含み損益</th><th>損益率</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <!-- セクター別配分 -->
+      <section class="pf-sector-section">
+        <div class="chart-card pf-sector-chart-card">
+          <h3>セクター別構成比</h3>
+          <canvas id="pfSectorChart"></canvas>
+        </div>
+        <div class="table-section pf-sector-table-card">
+          <h3>セクター別内訳</h3>
+          <div class="table-wrapper">
+            <table id="pfSectorTable">
+              <thead>
+                <tr>
+                  <th>セクター</th><th>銘柄数</th><th>評価額</th><th>構成比</th><th>含み損益</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 全保有銘柄一覧（統合） -->
+      <section class="table-section">
+        <h3>全保有銘柄一覧</h3>
+        <div class="pf-filter-row">
+          <label>セクター:</label>
+          <select id="pfSectorFilter"><option value="all">全セクター</option></select>
+          <label>口座:</label>
+          <select id="pfAccountFilter">
+            <option value="all">全口座</option>
+            <option value="特定">特定預り</option>
+            <option value="NISA成長">NISA成長投資枠</option>
+            <option value="NISAつみたて">NISAつみたて投資枠</option>
+          </select>
+          <label>表示:</label>
+          <select id="pfSortField">
+            <option value="evalTotal">評価額順</option>
+            <option value="pl">損益額順</option>
+            <option value="plPct">損益率順</option>
+            <option value="sector">セクター順</option>
+            <option value="code">コード順</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table id="pfHoldingsTable">
+            <thead>
+              <tr>
+                <th class="pf-th-sortable" data-sort="code">コード</th>
+                <th>銘柄名</th>
+                <th class="pf-th-sortable" data-sort="sector">セクター</th>
+                <th>口座</th>
+                <th class="pf-th-sortable num" data-sort="shares">株数</th>
+                <th class="num">取得単価</th>
+                <th class="num">現在値</th>
+                <th class="pf-th-sortable num" data-sort="evalTotal">評価額</th>
+                <th class="num">構成比</th>
+                <th class="pf-th-sortable num" data-sort="pl">損益</th>
+                <th class="pf-th-sortable num" data-sort="plPct">損益率</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 含み損銘柄 -->
+      <section class="table-section pf-loss-section">
+        <h3>含み損銘柄</h3>
+        <div class="table-wrapper">
+          <table id="pfLossTable">
+            <thead>
+              <tr>
+                <th>コード</th><th>銘柄名</th><th>口座</th><th class="num">評価額</th><th class="num">含み損</th><th class="num">損益率</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 分析・提案 -->
+      <section class="pf-analysis-section">
+        <h3>ポートフォリオ分析・提案</h3>
+        <div id="pfAnalysis" class="pf-analysis-content"></div>
+      </section>
+    </div>
+
     <!-- ===== 設定ページ ===== -->
-    <div class="page active" id="page-settings">
+    <div class="page" id="page-settings">
       <h2 class="page-title">設定</h2>
 
       <div class="settings-grid">
