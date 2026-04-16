@@ -113,6 +113,7 @@
     <!-- ===== 管理シート (ダッシュボード) ===== -->
     <div class="page" id="page-dashboard">
       <h2 class="page-title">管理シート</h2>
+      <p id="priceUpdateInfo" style="font-size:0.75rem;color:#888;margin-bottom:8px;"></p>
 
       <!-- サマリーカード -->
       <section class="summary-section">
@@ -229,6 +230,7 @@
           <button class="btn btn-danger" id="deleteSelectedBtn">選択削除</button>
           <button class="btn btn-csv" id="csvImportBtn">CSV読込（SBI証券）</button>
           <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
+          <button class="btn btn-price" id="updatePriceBtn">株価を最新に更新</button>
         </div>
         <div id="csvMessage" style="display:none; margin:8px 0; padding:10px; border-radius:6px; font-size:0.85rem;"></div>
 

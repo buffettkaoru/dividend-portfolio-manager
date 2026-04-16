@@ -616,6 +616,16 @@
     document.getElementById("csvFile").click();
   });
 
+  document.getElementById("updatePriceBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("updatePriceBtn");
+    btn.textContent = "取得中...";
+    btn.disabled = true;
+    await updateStockPrices();
+    btn.textContent = "株価を最新に更新";
+    btn.disabled = false;
+    showCsvMessage("株価を最新データに更新しました", false);
+  });
+
   function showCsvMessage(text, isError) {
     const el = document.getElementById("csvMessage");
     el.style.display = "block";
@@ -847,6 +857,63 @@
     e.target.value = "";
   });
 
+  // ----- 株価自動取得 -----
+  async function fetchLatestPrices() {
+    try {
+      const resp = await fetch("https://stock-kabu3.com/api/stocks/index.json");
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      // データは配列 or オブジェクト形式
+      const priceMap = {};
+      if (Array.isArray(data)) {
+        data.forEach((item) => {
+          const code = String(item.code || item.ticker || "");
+          if (code && item.close) priceMap[code] = item.close;
+          else if (code && item.price) priceMap[code] = item.price;
+        });
+      } else if (typeof data === "object") {
+        Object.keys(data).forEach((key) => {
+          const item = data[key];
+          const code = String(item.code || key || "");
+          const price = item.close || item.price || item.c;
+          if (code && price) priceMap[code] = price;
+        });
+      }
+      return Object.keys(priceMap).length > 0 ? priceMap : null;
+    } catch (e) {
+      console.log("株価取得スキップ:", e.message);
+      return null;
+    }
+  }
+
+  async function updateStockPrices() {
+    const priceMap = await fetchLatestPrices();
+    if (!priceMap) return;
+    let updated = false;
+    stocks.forEach((s) => {
+      if (/^\d{4}$/.test(s.code) && priceMap[s.code]) {
+        s.currentPrice = priceMap[s.code];
+        updated = true;
+      }
+    });
+    if (updated) {
+      saveData(STORAGE_KEYS.stocks, stocks);
+      const now = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+      localStorage.setItem("lastPriceUpdate", now);
+      updatePriceInfo();
+      renderEntryTable();
+      // ダッシュボードが表示中なら再描画
+      const dashPage = document.getElementById("page-dashboard");
+      if (dashPage && dashPage.classList.contains("active")) renderDashboard();
+    }
+  }
+
+  function updatePriceInfo() {
+    const el = document.getElementById("priceUpdateInfo");
+    const last = localStorage.getItem("lastPriceUpdate");
+    if (el) el.textContent = last ? "株価最終更新: " + last : "";
+  }
+
   // ----- 初期化 -----
   // 業種・配当金が未設定の銘柄に自動補完
   let dataUpdated = false;
@@ -872,4 +939,8 @@
   initSettings();
   renderEntryTable();
   renderNisaTable();
+  updatePriceInfo();
+
+  // 株価を自動取得（バックグラウンド）
+  if (stocks.length > 0) updateStockPrices();
 })();
