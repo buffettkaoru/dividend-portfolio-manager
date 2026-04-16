@@ -305,7 +305,8 @@
 
     const totalPL = totalValuation - totalPurchase;
     const totalPLPct = totalPurchase > 0 ? (totalPL / totalPurchase) * 100 : 0;
-    const divYield = totalPurchase > 0 ? (totalDividend / totalPurchase) * 100 : 0;
+    const divYieldCost = totalPurchase > 0 ? (totalDividend / totalPurchase) * 100 : 0;
+    const divYieldMarket = totalValuation > 0 ? (totalDividend / totalValuation) * 100 : 0;
 
     // サマリー更新
     document.getElementById("totalAssets").innerHTML = formatNum(totalValuation) + '<span class="unit">円</span>';
@@ -316,7 +317,7 @@
     const plPctEl = document.getElementById("totalPLPct");
     plPctEl.textContent = "(" + (totalPL >= 0 ? "+" : "") + totalPLPct.toFixed(2) + "%)";
     plPctEl.className = totalPL >= 0 ? "positive" : "negative";
-    document.getElementById("divYield").innerHTML = divYield.toFixed(2) + '<span class="unit">%</span>';
+    document.getElementById("divYield").innerHTML = divYieldMarket.toFixed(2) + '<span class="unit">%</span>';
     document.getElementById("annualDiv").innerHTML = formatNum(totalDividend) + '<span class="unit">円</span>';
     document.getElementById("stockCount").innerHTML = valid.length + '<span class="unit">銘柄</span>';
 
@@ -863,20 +864,21 @@
       const resp = await fetch("https://stock-kabu3.com/api/stocks/index.json");
       if (!resp.ok) return null;
       const data = await resp.json();
-      // データは配列 or オブジェクト形式
       const priceMap = {};
-      if (Array.isArray(data)) {
-        data.forEach((item) => {
-          const code = String(item.code || item.ticker || "");
-          if (code && item.close) priceMap[code] = item.close;
-          else if (code && item.price) priceMap[code] = item.price;
-        });
-      } else if (typeof data === "object") {
-        Object.keys(data).forEach((key) => {
-          const item = data[key];
-          const code = String(item.code || key || "");
-          const price = item.close || item.price || item.c;
-          if (code && price) priceMap[code] = price;
+      // data.stocks が配列の場合
+      const items = data.stocks || (Array.isArray(data) ? data : []);
+      items.forEach((item) => {
+        if (!item.symbol || !item.price) return;
+        // "7203.T" → "7203", "AAPL" → "AAPL"
+        const code = item.symbol.replace(/\.T$/, "");
+        priceMap[code] = item.price;
+      });
+      // オブジェクト形式の場合のフォールバック
+      if (items.length === 0 && typeof data === "object") {
+        Object.values(data).forEach((item) => {
+          if (!item || !item.symbol || !item.price) return;
+          const code = item.symbol.replace(/\.T$/, "");
+          priceMap[code] = item.price;
         });
       }
       return Object.keys(priceMap).length > 0 ? priceMap : null;
