@@ -170,6 +170,20 @@ body {
   font-weight: 600;
 }
 
+.ad-slot {
+  margin: 16px 0;
+  min-height: 90px;
+  text-align: center;
+  background: var(--card-bg);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray);
+  font-size: 0.8rem;
+}
+
 .btn-small {
   padding: 0.3rem 0.8rem;
   font-size: 0.8rem;

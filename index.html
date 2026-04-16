@@ -3,9 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>高配当株 管理シート</title>
+  <title>高配当株 管理シート | 無料ポートフォリオ管理ツール</title>
+  <meta name="description" content="SBI証券のCSVを読み込むだけで高配当株ポートフォリオを簡単管理。配当利回り・業種割合・月別配当をグラフで可視化。完全無料。">
+  <meta name="keywords" content="高配当株,配当管理,ポートフォリオ,SBI証券,NISA,配当利回り,配当金">
+  <meta property="og:title" content="高配当株 管理シート">
+  <meta property="og:description" content="SBI証券CSVを読み込むだけ。配当利回り・業種割合・月別配当をグラフで可視化する無料ツール。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://buffettkaoru.github.io/dividend-portfolio-manager/">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Google AdSense（審査通過後にdata-ad-clientを設定） -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
 </head>
 <body>
   <!-- ナビゲーション -->
@@ -143,6 +151,11 @@
           <canvas id="monthlyDivChart"></canvas>
         </div>
       </section>
+
+      <!-- 広告枠 -->
+      <div class="ad-slot" id="ad-dashboard">
+        <!-- AdSense審査通過後に広告コードを挿入 -->
+      </div>
 
       <!-- 銘柄構成比 -->
       <section class="composition-section">
