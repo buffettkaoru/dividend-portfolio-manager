@@ -18,6 +18,7 @@
       <li><a href="#" class="nav-link" data-page="dashboard">管理シート</a></li>
       <li><a href="#" class="nav-link" data-page="entry">銘柄入力</a></li>
       <li><a href="#" class="nav-link" data-page="nisa">NISA管理</a></li>
+      <li><a href="#" class="nav-link" data-page="todo">ToDoリスト</a></li>
     </ul>
     <div class="sidebar-footer">
       <button id="exportBtn" class="btn btn-outline">データ書出</button>
@@ -259,6 +260,63 @@
             <tbody id="nisaBody">
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ToDoリストページ ===== -->
+    <div class="page" id="page-todo">
+      <h2 class="page-title">ToDoリスト</h2>
+
+      <div class="todo-container">
+        <!-- カテゴリサイドバー（モバイルではタブ表示） -->
+        <div class="todo-categories">
+          <div class="todo-category-list" id="todoCategoryList"></div>
+          <button class="btn btn-small" id="addCategoryBtn">+ カテゴリ追加</button>
+        </div>
+
+        <!-- メインToDoエリア -->
+        <div class="todo-main">
+          <!-- タスク追加フォーム -->
+          <div class="todo-add-form">
+            <input type="text" id="todoInput" placeholder="タスクを追加..." class="todo-input">
+            <div class="todo-add-options">
+              <select id="todoPriority" class="todo-select">
+                <option value="none">優先度: なし</option>
+                <option value="high">優先度: 高</option>
+                <option value="medium">優先度: 中</option>
+                <option value="low">優先度: 低</option>
+              </select>
+              <input type="date" id="todoDueDate" class="todo-date-input">
+              <button class="btn btn-primary" id="addTodoBtn">追加</button>
+            </div>
+          </div>
+
+          <!-- フィルター・ソート -->
+          <div class="todo-toolbar">
+            <div class="todo-filters">
+              <button class="todo-filter-btn active" data-filter="all">すべて</button>
+              <button class="todo-filter-btn" data-filter="active">未完了</button>
+              <button class="todo-filter-btn" data-filter="completed">完了済み</button>
+            </div>
+            <div class="todo-sort">
+              <select id="todoSort" class="todo-select">
+                <option value="created">作成日順</option>
+                <option value="priority">優先度順</option>
+                <option value="dueDate">期限順</option>
+                <option value="name">名前順</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- サマリー -->
+          <div class="todo-summary">
+            <span id="todoActiveCount">0件の未完了タスク</span>
+            <button class="btn btn-small todo-clear-btn" id="clearCompletedBtn">完了済みを削除</button>
+          </div>
+
+          <!-- タスクリスト -->
+          <div class="todo-list" id="todoList"></div>
         </div>
       </div>
     </div>

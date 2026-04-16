@@ -28,6 +28,11 @@
   let stockTypes = loadData(STORAGE_KEYS.stockTypes, []);
   let stocks = loadData(STORAGE_KEYS.stocks, []);
   let nisaItems = loadData(STORAGE_KEYS.nisa, []);
+  let todos = loadData(STORAGE_KEYS.todos, []);
+  let todoCustomCategories = loadData(STORAGE_KEYS.todoCategories, []);
+  let todoActiveCategory = "inbox";
+  let todoFilter = "all";
+  let todoSortBy = "created";
 
   // ----- ナビゲーション -----
   const navLinks = document.querySelectorAll(".nav-link");
@@ -42,6 +47,7 @@
       pages.forEach((p) => p.classList.remove("active"));
       document.getElementById("page-" + target).classList.add("active");
       if (target === "dashboard") renderDashboard();
+      if (target === "todo") renderTodoPage();
     });
   });
 
@@ -611,6 +617,317 @@
     renderTop20(valid, totalDiv);
   });
 
+  // ----- ToDoリスト -----
+  function getAllCategories() {
+    return [...TODO_CATEGORIES, ...todoCustomCategories];
+  }
+
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function renderTodoPage() {
+    renderTodoCategories();
+    renderTodoList();
+  }
+
+  function renderTodoCategories() {
+    const container = document.getElementById("todoCategoryList");
+    container.innerHTML = "";
+    const allCats = getAllCategories();
+
+    allCats.forEach((cat) => {
+      const count = todos.filter((t) => t.category === cat.id && !t.completed).length;
+      const item = document.createElement("div");
+      item.className = "todo-category-item" + (todoActiveCategory === cat.id ? " active" : "");
+      const isCustom = todoCustomCategories.some((c) => c.id === cat.id);
+      item.innerHTML = `
+        <span class="todo-category-icon">${cat.icon}</span>
+        <span class="todo-category-name">${cat.name}</span>
+        <span class="todo-category-count">${count}</span>
+        ${isCustom ? '<button class="todo-category-delete" title="削除">&times;</button>' : ""}
+      `;
+      item.addEventListener("click", (e) => {
+        if (e.target.classList.contains("todo-category-delete")) return;
+        todoActiveCategory = cat.id;
+        renderTodoPage();
+      });
+      const deleteBtn = item.querySelector(".todo-category-delete");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (!confirm(`「${cat.name}」カテゴリを削除しますか？\nタスクは「受信トレイ」に移動されます。`)) return;
+          todos.forEach((t) => {
+            if (t.category === cat.id) t.category = "inbox";
+          });
+          todoCustomCategories = todoCustomCategories.filter((c) => c.id !== cat.id);
+          if (todoActiveCategory === cat.id) todoActiveCategory = "inbox";
+          saveData(STORAGE_KEYS.todos, todos);
+          saveData(STORAGE_KEYS.todoCategories, todoCustomCategories);
+          renderTodoPage();
+        });
+      }
+      container.appendChild(item);
+    });
+  }
+
+  function getTodosByCategory() {
+    return todos.filter((t) => t.category === todoActiveCategory);
+  }
+
+  function filterTodos(items) {
+    if (todoFilter === "active") return items.filter((t) => !t.completed);
+    if (todoFilter === "completed") return items.filter((t) => t.completed);
+    return items;
+  }
+
+  function sortTodos(items) {
+    const priorityOrder = { high: 0, medium: 1, low: 2, none: 3 };
+    return [...items].sort((a, b) => {
+      // Completed items always go to the bottom
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      if (todoSortBy === "priority") return priorityOrder[a.priority] - priorityOrder[b.priority];
+      if (todoSortBy === "dueDate") {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      }
+      if (todoSortBy === "name") return (a.title || "").localeCompare(b.title || "", "ja");
+      // default: created (newest first)
+      return b.createdAt - a.createdAt;
+    });
+  }
+
+  function formatDueDate(dateStr) {
+    if (!dateStr) return null;
+    const due = new Date(dateStr + "T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.floor((due - today) / (1000 * 60 * 60 * 24));
+    const mm = (due.getMonth() + 1).toString();
+    const dd = due.getDate().toString();
+
+    if (diff < 0) return { text: `${mm}/${dd} (期限切れ)`, className: "overdue" };
+    if (diff === 0) return { text: "今日", className: "today" };
+    if (diff === 1) return { text: "明日", className: "" };
+    return { text: `${mm}/${dd}`, className: "" };
+  }
+
+  function renderTodoList() {
+    const container = document.getElementById("todoList");
+    const catItems = getTodosByCategory();
+    const filtered = filterTodos(catItems);
+    const sorted = sortTodos(filtered);
+
+    const activeCount = catItems.filter((t) => !t.completed).length;
+    document.getElementById("todoActiveCount").textContent = `${activeCount}件の未完了タスク`;
+
+    if (sorted.length === 0) {
+      const activeCat = getAllCategories().find((c) => c.id === todoActiveCategory);
+      container.innerHTML = `
+        <div class="todo-empty">
+          <div class="todo-empty-icon">${activeCat ? activeCat.icon : "📋"}</div>
+          <p>${todoFilter === "completed" ? "完了済みのタスクはありません" : "タスクがありません"}</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = "";
+    sorted.forEach((todo) => {
+      const el = document.createElement("div");
+      el.className = "todo-item" + (todo.completed ? " completed" : "");
+
+      let metaHtml = "";
+      if (todo.priority && todo.priority !== "none") {
+        const p = TODO_PRIORITY[todo.priority];
+        metaHtml += `<span class="todo-item-priority" style="background:${p.color}">${p.label}</span>`;
+      }
+      const due = formatDueDate(todo.dueDate);
+      if (due) {
+        metaHtml += `<span class="todo-item-due ${due.className}">${due.text}</span>`;
+      }
+      if (todo.memo) {
+        metaHtml += `<span class="todo-item-category-tag">メモあり</span>`;
+      }
+
+      el.innerHTML = `
+        <div class="todo-checkbox ${todo.completed ? "checked" : ""}" data-id="${todo.id}"></div>
+        <div class="todo-item-body">
+          <div class="todo-item-title">${escapeHtml(todo.title)}</div>
+          ${metaHtml ? `<div class="todo-item-meta">${metaHtml}</div>` : ""}
+        </div>
+        <div class="todo-item-actions">
+          <button class="todo-action-btn edit" data-id="${todo.id}" title="編集">✎</button>
+          <button class="todo-action-btn delete" data-id="${todo.id}" title="削除">✕</button>
+        </div>
+      `;
+
+      el.querySelector(".todo-checkbox").addEventListener("click", () => toggleTodo(todo.id));
+      el.querySelector(".todo-action-btn.edit").addEventListener("click", () => openTodoEdit(todo.id));
+      el.querySelector(".todo-action-btn.delete").addEventListener("click", () => deleteTodo(todo.id));
+      container.appendChild(el);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function addTodo() {
+    const input = document.getElementById("todoInput");
+    const title = input.value.trim();
+    if (!title) return;
+
+    const priority = document.getElementById("todoPriority").value;
+    const dueDate = document.getElementById("todoDueDate").value || null;
+
+    todos.push({
+      id: generateId(),
+      title,
+      completed: false,
+      priority,
+      dueDate,
+      memo: "",
+      category: todoActiveCategory,
+      createdAt: Date.now()
+    });
+
+    saveData(STORAGE_KEYS.todos, todos);
+    input.value = "";
+    document.getElementById("todoPriority").value = "none";
+    document.getElementById("todoDueDate").value = "";
+    renderTodoPage();
+  }
+
+  function toggleTodo(id) {
+    const todo = todos.find((t) => t.id === id);
+    if (todo) {
+      todo.completed = !todo.completed;
+      saveData(STORAGE_KEYS.todos, todos);
+      renderTodoList();
+    }
+  }
+
+  function deleteTodo(id) {
+    todos = todos.filter((t) => t.id !== id);
+    saveData(STORAGE_KEYS.todos, todos);
+    renderTodoList();
+  }
+
+  function openTodoEdit(id) {
+    const todo = todos.find((t) => t.id === id);
+    if (!todo) return;
+
+    const overlay = document.createElement("div");
+    overlay.className = "todo-edit-overlay";
+
+    const allCats = getAllCategories();
+    const catOptions = allCats.map((c) =>
+      `<option value="${c.id}" ${todo.category === c.id ? "selected" : ""}>${c.icon} ${c.name}</option>`
+    ).join("");
+
+    overlay.innerHTML = `
+      <div class="todo-edit-modal">
+        <h3>タスクを編集</h3>
+        <div class="todo-edit-field">
+          <label>タイトル</label>
+          <input type="text" id="editTodoTitle" value="${escapeHtml(todo.title)}">
+        </div>
+        <div class="todo-edit-field">
+          <label>カテゴリ</label>
+          <select id="editTodoCategory">${catOptions}</select>
+        </div>
+        <div class="todo-edit-field">
+          <label>優先度</label>
+          <select id="editTodoPriority">
+            <option value="none" ${todo.priority === "none" ? "selected" : ""}>なし</option>
+            <option value="high" ${todo.priority === "high" ? "selected" : ""}>高</option>
+            <option value="medium" ${todo.priority === "medium" ? "selected" : ""}>中</option>
+            <option value="low" ${todo.priority === "low" ? "selected" : ""}>低</option>
+          </select>
+        </div>
+        <div class="todo-edit-field">
+          <label>期限</label>
+          <input type="date" id="editTodoDueDate" value="${todo.dueDate || ""}">
+        </div>
+        <div class="todo-edit-field">
+          <label>メモ</label>
+          <textarea id="editTodoMemo">${escapeHtml(todo.memo || "")}</textarea>
+        </div>
+        <div class="todo-edit-actions">
+          <button class="btn btn-secondary" id="editTodoCancel">キャンセル</button>
+          <button class="btn btn-primary" id="editTodoSave">保存</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    document.getElementById("editTodoCancel").addEventListener("click", () => overlay.remove());
+
+    document.getElementById("editTodoSave").addEventListener("click", () => {
+      todo.title = document.getElementById("editTodoTitle").value.trim() || todo.title;
+      todo.category = document.getElementById("editTodoCategory").value;
+      todo.priority = document.getElementById("editTodoPriority").value;
+      todo.dueDate = document.getElementById("editTodoDueDate").value || null;
+      todo.memo = document.getElementById("editTodoMemo").value;
+      saveData(STORAGE_KEYS.todos, todos);
+      overlay.remove();
+      renderTodoPage();
+    });
+  }
+
+  function addCustomCategory() {
+    const name = prompt("新しいカテゴリ名を入力してください:");
+    if (!name || !name.trim()) return;
+    const icon = prompt("アイコン（絵文字）を入力してください:", "📁") || "📁";
+    const id = "custom_" + generateId();
+    todoCustomCategories.push({ id, name: name.trim(), icon, color: "#5b9bd5" });
+    saveData(STORAGE_KEYS.todoCategories, todoCustomCategories);
+    todoActiveCategory = id;
+    renderTodoPage();
+  }
+
+  // ToDo event listeners
+  document.getElementById("addTodoBtn").addEventListener("click", addTodo);
+
+  document.getElementById("todoInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addTodo();
+  });
+
+  document.getElementById("addCategoryBtn").addEventListener("click", addCustomCategory);
+
+  document.querySelectorAll(".todo-filter-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".todo-filter-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      todoFilter = btn.dataset.filter;
+      renderTodoList();
+    });
+  });
+
+  document.getElementById("todoSort").addEventListener("change", (e) => {
+    todoSortBy = e.target.value;
+    renderTodoList();
+  });
+
+  document.getElementById("clearCompletedBtn").addEventListener("click", () => {
+    const completedInCat = todos.filter((t) => t.category === todoActiveCategory && t.completed);
+    if (completedInCat.length === 0) return;
+    if (!confirm(`完了済みの${completedInCat.length}件のタスクを削除しますか？`)) return;
+    todos = todos.filter((t) => !(t.category === todoActiveCategory && t.completed));
+    saveData(STORAGE_KEYS.todos, todos);
+    renderTodoList();
+  });
+
   // ----- エクスポート / インポート -----
   document.getElementById("exportBtn").addEventListener("click", () => {
     const exportData = {
@@ -619,6 +936,8 @@
       stockTypes,
       stocks,
       nisaItems,
+      todos,
+      todoCustomCategories,
       exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
@@ -646,6 +965,8 @@
         if (data.stockTypes) { stockTypes = data.stockTypes; saveData(STORAGE_KEYS.stockTypes, stockTypes); }
         if (data.stocks) { stocks = data.stocks; saveData(STORAGE_KEYS.stocks, stocks); }
         if (data.nisaItems) { nisaItems = data.nisaItems; saveData(STORAGE_KEYS.nisa, nisaItems); }
+        if (data.todos) { todos = data.todos; saveData(STORAGE_KEYS.todos, todos); }
+        if (data.todoCustomCategories) { todoCustomCategories = data.todoCustomCategories; saveData(STORAGE_KEYS.todoCategories, todoCustomCategories); }
         // UIを再描画
         initSettings();
         renderEntryTable();
@@ -663,4 +984,5 @@
   initSettings();
   renderEntryTable();
   renderNisaTable();
+  renderTodoPage();
 })();

@@ -90,11 +90,29 @@ const CHART_COLORS = [
   "#7f8c8d"
 ];
 
+// ===== ToDoリスト デフォルトカテゴリ =====
+const TODO_CATEGORIES = [
+  { id: "inbox", name: "受信トレイ", icon: "📥", color: "#5b9bd5" },
+  { id: "today", name: "今日の予定", icon: "☀️", color: "#e8c96a" },
+  { id: "important", name: "重要", icon: "⭐", color: "#ed7d31" },
+  { id: "planned", name: "計画済み", icon: "📅", color: "#4caf50" },
+  { id: "investment", name: "投資関連", icon: "📈", color: "#9b59b6" }
+];
+
+const TODO_PRIORITY = {
+  high: { label: "高", color: "#e53935" },
+  medium: { label: "中", color: "#e8c96a" },
+  low: { label: "低", color: "#5b9bd5" },
+  none: { label: "なし", color: "#b0b8c8" }
+};
+
 // ===== ローカルストレージキー =====
 const STORAGE_KEYS = {
   settings: "portfolio_settings",
   stocks: "portfolio_stocks",
   industryTypes: "portfolio_industry_types",
   stockTypes: "portfolio_stock_types",
-  nisa: "portfolio_nisa"
+  nisa: "portfolio_nisa",
+  todos: "portfolio_todos",
+  todoCategories: "portfolio_todo_categories"
 };
