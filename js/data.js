@@ -92,11 +92,43 @@ const CHART_COLORS = [
 
 // ===== ToDoリスト デフォルトカテゴリ =====
 const TODO_CATEGORIES = [
-  { id: "inbox", name: "受信トレイ", icon: "📥", color: "#5b9bd5" },
-  { id: "today", name: "今日の予定", icon: "☀️", color: "#e8c96a" },
-  { id: "important", name: "重要", icon: "⭐", color: "#ed7d31" },
-  { id: "planned", name: "計画済み", icon: "📅", color: "#4caf50" },
-  { id: "investment", name: "投資関連", icon: "📈", color: "#9b59b6" }
+  { id: "life", name: "生活・住まい", icon: "🏠", color: "#5b9bd5" },
+  { id: "movies", name: "観たい映画", icon: "🎬", color: "#e8c96a" },
+  { id: "accounting", name: "会計・経理", icon: "💰", color: "#4caf50" },
+  { id: "business", name: "事業・組織づくり", icon: "🏢", color: "#ed7d31" },
+  { id: "learning", name: "学習・スキル", icon: "📚", color: "#9b59b6" },
+  { id: "mindset", name: "マインドセット", icon: "💡", color: "#1abc9c" },
+  { id: "beauty", name: "美容・健康", icon: "✨", color: "#ff9da7" }
+];
+
+// ===== ToDoリスト 初期データ =====
+const DEFAULT_TODOS = [
+  // 生活・住まい
+  { id: "d1", title: "車検はガソリンスタンドがベター、ベストはユーザー車検", completed: false, priority: "medium", dueDate: null, memo: "", category: "life", createdAt: 1 },
+  { id: "d2", title: "外壁リフォームは「暮らしのマーケット」がお勧め", completed: false, priority: "low", dueDate: null, memo: "", category: "life", createdAt: 2 },
+  { id: "d3", title: "保険は県民共済 2型がお勧め", completed: false, priority: "low", dueDate: null, memo: "", category: "life", createdAt: 3 },
+  // 観たい映画
+  { id: "d4", title: "マミー", completed: false, priority: "none", dueDate: null, memo: "", category: "movies", createdAt: 4 },
+  { id: "d5", title: "グリーンブック", completed: false, priority: "none", dueDate: null, memo: "", category: "movies", createdAt: 5 },
+  { id: "d6", title: "ビューティーインサイト", completed: false, priority: "none", dueDate: null, memo: "", category: "movies", createdAt: 6 },
+  { id: "d7", title: "ざライダー", completed: false, priority: "none", dueDate: null, memo: "", category: "movies", createdAt: 7 },
+  { id: "d8", title: "マグノリアの花たち", completed: false, priority: "none", dueDate: null, memo: "", category: "movies", createdAt: 8 },
+  { id: "d9", title: "ワンダー", completed: false, priority: "none", dueDate: null, memo: "", category: "movies", createdAt: 9 },
+  { id: "d10", title: "ライフ・イットセルフ", completed: false, priority: "none", dueDate: null, memo: "", category: "movies", createdAt: 10 },
+  { id: "d11", title: "ブレイブハート", completed: false, priority: "none", dueDate: null, memo: "", category: "movies", createdAt: 11 },
+  // 会計・経理
+  { id: "d12", title: "事業主借 → プライベートの収益", completed: false, priority: "medium", dueDate: null, memo: "事業用口座にプライベートのお金が入った場合", category: "accounting", createdAt: 12 },
+  { id: "d13", title: "事業主貸 → プライベートの支払い", completed: false, priority: "medium", dueDate: null, memo: "事業用口座からプライベートの支出をした場合", category: "accounting", createdAt: 13 },
+  // 事業・組織づくり
+  { id: "d14", title: "プロダクトマネージャーを立てる", completed: false, priority: "high", dueDate: null, memo: "Claudeだけと会話し、その人に任せる。作業を進めてもらい、定期的にチェックしてもらう。責任者の集まりを決める。", category: "business", createdAt: 14 },
+  { id: "d15", title: "組織のツリー構造をつくる", completed: false, priority: "high", dueDate: null, memo: "役割と責任者を決める：ファンドマネージャー、ウェブデザイン、エンジニア、プログラマー、ライター。適切に指示を与えて伝える。毎回伝えるので指示分のプロンプトを作る。責任者の下にA, B, Cみたいなチームを与える。", category: "business", createdAt: 15 },
+  // 学習・スキル
+  { id: "d16", title: "プログラミング学習はプロゲートで月1000円でOK", completed: false, priority: "low", dueDate: null, memo: "", category: "learning", createdAt: 16 },
+  // マインドセット
+  { id: "d17", title: "子供に遺す金融教育を考える", completed: false, priority: "medium", dueDate: null, memo: "人にどう思われるかじゃなく自分がどう生きたいか", category: "mindset", createdAt: 17 },
+  { id: "d18", title: "自分の人生の責任は自分にしかとれない", completed: false, priority: "none", dueDate: null, memo: "ドリームキラーには自分の人生の責任をとってもらえない", category: "mindset", createdAt: 18 },
+  // 美容・健康
+  { id: "d19", title: "スキンケア：レチノール、ハイドロキノン、漂白を調べる", completed: false, priority: "low", dueDate: null, memo: "", category: "beauty", createdAt: 19 }
 ];
 
 const TODO_PRIORITY = {

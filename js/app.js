@@ -28,9 +28,13 @@
   let stockTypes = loadData(STORAGE_KEYS.stockTypes, []);
   let stocks = loadData(STORAGE_KEYS.stocks, []);
   let nisaItems = loadData(STORAGE_KEYS.nisa, []);
-  let todos = loadData(STORAGE_KEYS.todos, []);
+  let todos = loadData(STORAGE_KEYS.todos, null);
+  if (todos === null) {
+    todos = DEFAULT_TODOS.map((t) => ({ ...t }));
+    saveData(STORAGE_KEYS.todos, todos);
+  }
   let todoCustomCategories = loadData(STORAGE_KEYS.todoCategories, []);
-  let todoActiveCategory = "inbox";
+  let todoActiveCategory = "life";
   let todoFilter = "all";
   let todoSortBy = "created";
 
