@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>使い方ガイド | 高配当株 管理シート</title>
+  <style>
+    body {
+      font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+      background: #111b30;
+      color: #f0f0f0;
+      line-height: 1.8;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    h1 {
+      color: #d4a843;
+      font-size: 1.5rem;
+      border-bottom: 2px solid #d4a843;
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+    }
+    h2 {
+      color: #e8c96a;
+      font-size: 1.15rem;
+      margin-top: 36px;
+      margin-bottom: 12px;
+      padding-left: 12px;
+      border-left: 4px solid #d4a843;
+    }
+    h3 {
+      color: #f0f0f0;
+      font-size: 1rem;
+      margin-top: 20px;
+    }
+    p, li {
+      color: #b0b8c8;
+      font-size: 0.9rem;
+    }
+    ul, ol { padding-left: 20px; }
+    ol li { margin-bottom: 8px; }
+    .step-box {
+      background: #1e2f4d;
+      border: 1px solid #2e4470;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 12px 0;
+    }
+    .step-box h3 {
+      margin-top: 0;
+      color: #d4a843;
+    }
+    .highlight {
+      background: rgba(212,168,67,0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #e8c96a;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .feature-card {
+      background: #1e2f4d;
+      border: 1px solid #2e4470;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .feature-card h3 {
+      color: #d4a843;
+      margin-top: 0;
+      font-size: 0.95rem;
+    }
+    .feature-card p {
+      margin: 0;
+      font-size: 0.85rem;
+    }
+    a { color: #d4a843; }
+    .back-link {
+      display: inline-block;
+      margin-top: 32px;
+      color: #d4a843;
+      text-decoration: none;
+      border: 1px solid #d4a843;
+      padding: 8px 20px;
+      border-radius: 6px;
+    }
+    .back-link:hover { background: rgba(212,168,67,0.1); }
+    .note {
+      background: rgba(76,175,80,0.1);
+      border: 1px solid rgba(76,175,80,0.3);
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: #a5d6a7;
+      margin: 12px 0;
+    }
+    .warn {
+      background: rgba(255,152,0,0.1);
+      border: 1px solid rgba(255,152,0,0.3);
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: #ffe0b2;
+      margin: 12px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 0.85rem;
+    }
+    th {
+      background: #2a3f66;
+      color: #e8c96a;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #2e4470;
+      color: #b0b8c8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>高配当株 管理シート 使い方ガイド</h1>
+
+    <p>SBI証券のCSVを読み込むだけで、高配当株ポートフォリオを簡単に管理できる無料ツールです。配当利回り・業種割合・月別配当金をグラフで可視化します。</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>CSV一括読込</h3>
+        <p>SBI証券の保有証券CSVを読み込むだけで銘柄を一括登録。特定口座・NISA口座を自動判別します。</p>
+      </div>
+      <div class="feature-card">
+        <h3>配当金自動入力</h3>
+        <p>主要高配当銘柄200銘柄以上の配当データを内蔵。読み込み時に自動で配当金額と支払い月が入力されます。</p>
+      </div>
+      <div class="feature-card">
+        <h3>グラフで可視化</h3>
+        <p>業種割合・利回り分布・月別配当金をグラフで表示。ポートフォリオの全体像が一目でわかります。</p>
+      </div>
+      <div class="feature-card">
+        <h3>完全ローカル保存</h3>
+        <p>データはすべてブラウザに保存。外部サーバーに送信されないので、安心して利用できます。</p>
+      </div>
+    </div>
+
+    <h2>Step 1: 設定</h2>
+    <div class="step-box">
+      <h3>初回のみ設定してください</h3>
+      <ol>
+        <li>左メニューの「設定」をクリック</li>
+        <li><span class="highlight">管理したいもの</span> — 「国内と米国」「国内のみ」「米国のみ」から選択</li>
+        <li><span class="highlight">配当金の表示</span> — 税引前 or 税引後</li>
+        <li><span class="highlight">証券会社</span> — SBI証券 / 楽天証券 / その他</li>
+      </ol>
+    </div>
+
+    <h2>Step 2: 銘柄を読み込む</h2>
+    <div class="step-box">
+      <h3>SBI証券のCSVから一括読込</h3>
+      <ol>
+        <li>SBI証券にログイン</li>
+        <li>「口座管理」→「保有証券」画面を開く</li>
+        <li>ページ上部の「CSVダウンロード」をクリックしてファイルを保存</li>
+        <li>本アプリの左メニュー「銘柄入力」をクリック</li>
+        <li>青い <span class="highlight">CSV読込（SBI証券）</span> ボタンをクリック</li>
+        <li>ダウンロードしたCSVファイルを選択</li>
+      </ol>
+    </div>
+    <div class="note">
+      読み込み時に、データベースに登録されている銘柄は<strong>業種・配当金単価・配当月が自動入力</strong>されます。同じ銘柄が特定口座とNISA口座の両方にある場合、自動で合算されます。
+    </div>
+
+    <h3>手動で追加する場合</h3>
+    <p>「銘柄入力」ページで「+ 銘柄追加」ボタンを押し、各項目を入力してください。入力は自動保存されます。</p>
+
+    <h2>Step 3: 配当金を確認・修正する</h2>
+    <p>データベースに登録されていない銘柄は、配当金単価と配当月が空欄になっています。「銘柄入力」画面で手入力してください。</p>
+
+    <table>
+      <tr><th>項目</th><th>入力例</th><th>説明</th></tr>
+      <tr><td>配当金単価(年)</td><td>120</td><td>1株あたりの年間配当金（円）</td></tr>
+      <tr><td>配当月</td><td>3,9</td><td>配当の支払い月（カンマ区切り）</td></tr>
+    </table>
+
+    <div class="warn">
+      配当金データは予想値ベースです。増配・減配があった場合は、各自で修正してください。
+    </div>
+
+    <h2>Step 4: 管理シートを見る</h2>
+    <p>左メニューの「管理シート」をクリックすると、以下の情報が表示されます：</p>
+    <ul>
+      <li><strong>保有資産額</strong> — 全銘柄の評価額合計・購入額・損益</li>
+      <li><strong>配当利回り</strong> — ポートフォリオ全体の配当利回り</li>
+      <li><strong>年間配当金</strong> — 年間の配当金合計</li>
+      <li><strong>業種割合</strong> — 配当金 or 評価額ベースの業種別円グラフ</li>
+      <li><strong>利回り分布</strong> — 利回り帯別の銘柄数</li>
+      <li><strong>月別配当金</strong> — 1月〜12月の配当金支払い予定</li>
+      <li><strong>ディフェンシブ/景気敏感</strong> — 銘柄構成比のバー表示</li>
+      <li><strong>配当金Top20</strong> — 配当金額の高い銘柄ランキング</li>
+    </ul>
+
+    <h2>Step 5: NISA管理</h2>
+    <p>左メニューの「NISA管理」から、NISAで保有している銘柄と株数を管理できます。CSV読込時にNISA口座の銘柄は自動で登録されます。</p>
+
+    <h2>データのバックアップ</h2>
+    <p>左メニュー下部の「データ書出」ボタンで、全データをJSONファイルとして保存できます。端末を変更する場合や万が一に備えて、定期的なバックアップをおすすめします。</p>
+    <p>「データ読込」ボタンから、保存したJSONファイルを読み込んで復元できます。</p>
+
+    <h2>よくある質問</h2>
+
+    <h3>Q. データはどこに保存されますか？</h3>
+    <p>お使いのブラウザのローカルストレージに保存されます。外部サーバーには一切送信されません。ブラウザのキャッシュを削除するとデータも消えるため、定期的にバックアップしてください。</p>
+
+    <h3>Q. スマホでも使えますか？</h3>
+    <p>はい。スマホのブラウザで開けばそのまま使えます。ホーム画面に追加すると、アプリのように使えます。</p>
+
+    <h3>Q. 楽天証券のCSVに対応していますか？</h3>
+    <p>現在はSBI証券のCSV形式に対応しています。楽天証券への対応は今後追加予定です。</p>
+
+    <h3>Q. 配当金データが実際と違います</h3>
+    <p>配当金データは予想値ベースのため、実際と異なる場合があります。「銘柄入力」画面から個別に修正できます。</p>
+
+    <a href="index.html" class="back-link">アプリに戻る</a>
+
+    <p style="margin-top: 40px; font-size: 0.75rem; color: #666; text-align: center;">
+      <a href="privacy.html">プライバシーポリシー</a>
+    </p>
+  </div>
+</body>
+</html>

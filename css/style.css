@@ -170,6 +170,23 @@ body {
   font-weight: 600;
 }
 
+.sidebar-links {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.sidebar-links a {
+  color: var(--gray);
+  text-decoration: none;
+  display: block;
+  padding: 4px 0;
+}
+
+.sidebar-links a:hover {
+  color: var(--gold-light);
+}
+
 .ad-slot {
   margin: 16px 0;
   min-height: 90px;
