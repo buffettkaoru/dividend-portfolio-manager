@@ -1118,4 +1118,19 @@
 
   // 株価を自動取得（バックグラウンド）
   if (stocks.length > 0) updateStockPrices();
+
+  // ----- 自動アップデート -----
+  const APP_VERSION = "2.1";
+  async function checkForUpdates() {
+    try {
+      const resp = await fetch("version.json?t=" + Date.now());
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.version && data.version !== APP_VERSION) {
+        location.reload();
+      }
+    } catch (e) { /* 無視 */ }
+  }
+  // 5分ごとに更新チェック
+  setInterval(checkForUpdates, 5 * 60 * 1000);
 })();
