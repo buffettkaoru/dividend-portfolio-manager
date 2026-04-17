@@ -1086,11 +1086,11 @@
     }
     const divData = STOCK_DIVIDEND_MAP[s.code];
     if (divData) {
-      if (divData.div >= 0 && s.divPerShare !== divData.div) {
+      if ((s.divPerShare == null || s.divPerShare === 0) && divData.div > 0) {
         s.divPerShare = divData.div;
         dataUpdated = true;
       }
-      if (divData.months && s.divMonths !== divData.months) {
+      if (!s.divMonths && divData.months) {
         s.divMonths = divData.months;
         dataUpdated = true;
       }
@@ -1120,7 +1120,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "2.1";
+  const APP_VERSION = "2.2";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());
