@@ -168,7 +168,7 @@ const STOCK_DIVIDEND_MAP = {
   // === 水産・農林業 ===
   "1332":{div:40,months:"3,9"},"1333":{div:26,months:"3,9"},
   // === 建設業 ===
-  "1414":{div:46,months:"6,12"},"1721":{div:52,months:"3,9"},"1723":{div:152,months:"3,9"},
+  "1414":{div:46,months:"6,12"},"1721":{div:52,months:"3,9"},"1723":{div:115,months:"3,9"},
   "1801":{div:48,months:"3,9"},"1802":{div:28,months:"3,9"},"1803":{div:56,months:"3,9"},
   "1808":{div:90,months:"3,9"},"1812":{div:48,months:"3,9"},"1835":{div:140,months:"3,9"},
   "1878":{div:55,months:"3,9"},"1925":{div:50,months:"3,9"},"1928":{div:144,months:"4,10"},
@@ -194,7 +194,7 @@ const STOCK_DIVIDEND_MAP = {
   // === 繊維製品 ===
   "3405":{div:42,months:"3,9"},"3597":{div:500,months:"6"},
   // === 化学 ===
-  "4005":{div:28,months:"3,9"},"4008":{div:200,months:"3,9"},"4041":{div:140,months:"3,9"},
+  "4005":{div:28,months:"3,9"},"4008":{div:40,months:"3,9"},"4041":{div:140,months:"3,9"},
   "4042":{div:100,months:"3,9"},"4043":{div:80,months:"3,9"},"4061":{div:38,months:"3,9"},
   "4063":{div:120,months:"3,9"},"4188":{div:44,months:"3,9"},"4208":{div:32,months:"3,9"},
   "4220":{div:47,months:"3,9"},"4248":{div:36,months:"3,9"},"4452":{div:150,months:"6,12"},
