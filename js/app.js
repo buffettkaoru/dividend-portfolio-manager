@@ -318,6 +318,7 @@
     plPctEl.textContent = "(" + (totalPL >= 0 ? "+" : "") + totalPLPct.toFixed(2) + "%)";
     plPctEl.className = totalPL >= 0 ? "positive" : "negative";
     document.getElementById("divYield").innerHTML = divYieldMarket.toFixed(2) + '<span class="unit">%</span>';
+    document.getElementById("divYieldYoc").innerHTML = divYieldCost.toFixed(2) + '<span class="unit">%</span>';
     document.getElementById("annualDiv").innerHTML = formatNum(totalDividend) + '<span class="unit">円</span>';
     document.getElementById("stockCount").innerHTML = valid.length + '<span class="unit">銘柄</span>';
 
