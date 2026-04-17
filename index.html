@@ -141,6 +141,11 @@
           <p class="big-number" id="annualDiv">0<span class="unit">円</span></p>
         </div>
         <div class="summary-card">
+          <h3>年間配当金（税引後）</h3>
+          <p class="big-number" id="annualDivAfterTax">0<span class="unit">円</span></p>
+          <p style="font-size:0.7rem;color:var(--gray);margin-top:4px;">NISA分は非課税で計算</p>
+        </div>
+        <div class="summary-card">
           <h3>銘柄数</h3>
           <p class="big-number" id="stockCount">0<span class="unit">銘柄</span></p>
         </div>
@@ -234,7 +239,9 @@
           <button class="btn btn-primary" id="addRowBtn">+ 銘柄追加</button>
           <button class="btn btn-danger" id="deleteSelectedBtn">選択削除</button>
           <button class="btn btn-csv" id="csvImportBtn">CSV読込（SBI証券）</button>
+          <button class="btn btn-rakuten" id="csvImportRakutenBtn">CSV読込（楽天証券）</button>
           <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
+          <input type="file" id="csvFileRakuten" accept=".csv,.txt" style="display:none">
           <button class="btn btn-price" id="updatePriceBtn">株価を最新に更新</button>
         </div>
         <div id="csvMessage" style="display:none; margin:8px 0; padding:10px; border-radius:6px; font-size:0.85rem;"></div>

@@ -185,6 +185,12 @@ body {
   font-weight: 600;
 }
 
+.btn-rakuten {
+  background: #bf0000;
+  color: #fff;
+  font-weight: 600;
+}
+
 .btn-price {
   background: #4CAF50;
   color: #fff;

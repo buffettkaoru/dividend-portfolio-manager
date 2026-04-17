@@ -309,6 +309,23 @@
       }
     });
 
+    // 税引後配当金の計算（NISA分は非課税、特定口座は20.315%課税）
+    const TAX_RATE = 0.20315;
+    let totalDivAfterTax = 0;
+    valid.forEach((s) => {
+      const dividend = (s.divPerShare || 0) * s.shares;
+      const nisaItem = nisaItems.find((n) => n.code === s.code);
+      if (nisaItem && nisaItem.shares > 0) {
+        const nisaShares = Math.min(nisaItem.shares, s.shares);
+        const tokuteiShares = s.shares - nisaShares;
+        const nisaDiv = (s.divPerShare || 0) * nisaShares;
+        const tokuteiDiv = (s.divPerShare || 0) * tokuteiShares;
+        totalDivAfterTax += nisaDiv + tokuteiDiv * (1 - TAX_RATE);
+      } else {
+        totalDivAfterTax += dividend * (1 - TAX_RATE);
+      }
+    });
+
     const totalPL = totalValuation - totalPurchase;
     const totalPLPct = totalPurchase > 0 ? (totalPL / totalPurchase) * 100 : 0;
     const divYieldCost = totalPurchase > 0 ? (totalDividend / totalPurchase) * 100 : 0;
@@ -326,6 +343,7 @@
     document.getElementById("divYield").innerHTML = divYieldMarket.toFixed(2) + '<span class="unit">%</span>';
     document.getElementById("divYieldYoc").innerHTML = divYieldCost.toFixed(2) + '<span class="unit">%</span>';
     document.getElementById("annualDiv").innerHTML = formatNum(totalDividend) + '<span class="unit">円</span>';
+    document.getElementById("annualDivAfterTax").innerHTML = formatNum(totalDivAfterTax) + '<span class="unit">円</span>';
     document.getElementById("stockCount").innerHTML = valid.length + '<span class="unit">銘柄</span>';
 
     // 業種割合チャート
@@ -816,6 +834,141 @@
       (result.nisa.length > 0 ? `、NISA ${result.nisa.length}件反映` : "");
     showCsvMessage(msg, false);
   }
+
+  // ----- CSV読込（楽天証券） -----
+  document.getElementById("csvImportRakutenBtn").addEventListener("click", () => {
+    document.getElementById("csvFileRakuten").click();
+  });
+
+  function parseRakutenCsv(text) {
+    const lines = text.split(/\r?\n/);
+    const allStocks = [];
+    const nisaList = [];
+    let currentSection = "";
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i].trim();
+
+      // セクション判定
+      if (line.includes("特定")) currentSection = "tokutei";
+      else if (line.includes("NISA") || line.includes("ニーサ")) currentSection = "nisa";
+
+      // ヘッダー行を探す（楽天証券の各種フォーマットに対応）
+      if ((line.includes("銘柄") && (line.includes("数量") || line.includes("保有"))) ||
+          (line.includes("銘柄コード") || line.includes("ティッカー"))) {
+        const headers = line.split(",").map((h) => h.replace(/"/g, "").trim());
+        const col = {};
+        headers.forEach((h, idx) => {
+          if (h.includes("銘柄コード") || h.includes("コード") || h.includes("ティッカー")) col.code = idx;
+          else if (h.includes("銘柄") && !h.includes("コード")) col.name = idx;
+          else if (h.includes("数量") || h.includes("保有")) col.shares = idx;
+          else if (h.includes("平均取得") || h.includes("取得単価") || h.includes("買付単価")) col.purchasePrice = idx;
+          else if (h.includes("現在値") || h.includes("時価") || h === "株価") col.currentPrice = idx;
+          else if (h.includes("口座")) col.account = idx;
+        });
+
+        // 銘柄名の列からコードを抽出する場合（「銘柄」列に「1234 銘柄名」形式）
+        if (col.code == null && col.name != null) col.codeFromName = true;
+
+        i++;
+        while (i < lines.length) {
+          const dataLine = lines[i].trim();
+          if (!dataLine || dataLine.includes("合計")) { i++; continue; }
+          // 新しいセクションヘッダーなら抜ける
+          if (dataLine.includes("銘柄") && (dataLine.includes("数量") || dataLine.includes("保有"))) break;
+
+          const cols = dataLine.split(",").map((c) => c.replace(/"/g, "").trim());
+
+          let code = "";
+          let name = "";
+          if (col.code != null) {
+            code = cols[col.code] || "";
+          }
+          if (col.name != null) {
+            name = cols[col.name] || "";
+          }
+          // コード列がない場合、銘柄名から数字を抽出
+          if (!code && col.codeFromName && name) {
+            const m = name.match(/^(\d{4})/);
+            if (m) { code = m[1]; name = name.replace(/^\d{4}\s*/, ""); }
+          }
+
+          code = code.replace(/\s/g, "");
+          if (!code || !/^(\d{4}|[A-Z]{1,5})$/.test(code)) { i++; continue; }
+
+          const shares = col.shares != null ? parseFloat(cols[col.shares].replace(/[,+]/g, "")) : 0;
+          const purchasePrice = col.purchasePrice != null ? parseFloat(cols[col.purchasePrice].replace(/[,+]/g, "")) : null;
+          const currentPrice = col.currentPrice != null ? parseFloat(cols[col.currentPrice].replace(/[,+]/g, "")) : null;
+
+          // 口座種別の判定
+          let section = currentSection;
+          if (col.account != null) {
+            const acct = cols[col.account] || "";
+            if (acct.includes("NISA") || acct.includes("ニーサ")) section = "nisa";
+            else if (acct.includes("特定")) section = "tokutei";
+          }
+
+          if (!isNaN(shares) && shares > 0) {
+            allStocks.push({ code, name, shares, purchasePrice, currentPrice, section });
+            if (section === "nisa") nisaList.push({ code, shares });
+          }
+          i++;
+        }
+        continue;
+      }
+      i++;
+    }
+
+    // 同一銘柄を合算
+    const merged = {};
+    allStocks.forEach((s) => {
+      if (merged[s.code]) {
+        const m = merged[s.code];
+        const oldTotal = (m.purchasePrice || 0) * m.shares;
+        const newTotal = (s.purchasePrice || 0) * s.shares;
+        m.shares += s.shares;
+        m.purchasePrice = m.shares > 0 ? (oldTotal + newTotal) / m.shares : null;
+        if (s.currentPrice != null) m.currentPrice = s.currentPrice;
+      } else {
+        const divData = STOCK_DIVIDEND_MAP[s.code];
+        merged[s.code] = {
+          code: s.code, name: s.name,
+          industry: STOCK_INDUSTRY_MAP[s.code] || "",
+          shares: s.shares, purchasePrice: s.purchasePrice, currentPrice: s.currentPrice,
+          divPerShare: divData ? divData.div : null,
+          divMonths: divData ? divData.months : ""
+        };
+      }
+    });
+    return { stocks: Object.values(merged), nisa: nisaList };
+  }
+
+  document.getElementById("csvFileRakuten").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      let text = ev.target.result;
+      const result = parseRakutenCsv(text);
+      if (result.stocks.length === 0) {
+        const reader2 = new FileReader();
+        reader2.onload = (ev2) => {
+          const result2 = parseRakutenCsv(ev2.target.result);
+          if (result2.stocks.length === 0) {
+            showCsvMessage("CSVから銘柄を読み取れませんでした。楽天証券の「保有商品一覧」CSVか確認してください。", true);
+            return;
+          }
+          mergeImportedStocks(result2);
+        };
+        reader2.readAsText(file, "Shift_JIS");
+        return;
+      }
+      mergeImportedStocks(result);
+    };
+    reader.readAsText(file, "UTF-8");
+    e.target.value = "";
+  });
 
   // ----- エクスポート / インポート -----
   document.getElementById("exportBtn").addEventListener("click", () => {
