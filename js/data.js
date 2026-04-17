@@ -174,7 +174,7 @@ const STOCK_DIVIDEND_MAP = {
   "1878":{div:55,months:"3,9"},"1925":{div:50,months:"3,9"},"1928":{div:144,months:"4,10"},
   "1951":{div:66,months:"3,9"},
   // === 食料品 ===
-  "2002":{div:60,months:"3,9"},"2003":{div:280,months:"3,9"},"2269":{div:52,months:"3,9"},
+  "2002":{div:60,months:"3,9"},"2003":{div:70,months:"3,9"},"2269":{div:52,months:"3,9"},
   "2282":{div:50,months:"3,9"},"2502":{div:36,months:"6,12"},"2503":{div:74,months:"6,12"},
   "2587":{div:90,months:"6,12"},"2593":{div:52,months:"1,7"},"2802":{div:48,months:"3,9"},
   "2809":{div:22,months:"3,9"},"2871":{div:98,months:"3,9"},"2914":{div:234,months:"6,12"},
