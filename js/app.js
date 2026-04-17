@@ -927,11 +927,11 @@
     }
     const divData = STOCK_DIVIDEND_MAP[s.code];
     if (divData) {
-      if (!s.divPerShare && divData.div > 0) {
+      if (divData.div >= 0 && s.divPerShare !== divData.div) {
         s.divPerShare = divData.div;
         dataUpdated = true;
       }
-      if (!s.divMonths && divData.months) {
+      if (divData.months && s.divMonths !== divData.months) {
         s.divMonths = divData.months;
         dataUpdated = true;
       }
