@@ -950,6 +950,19 @@
   renderNisaTable();
   updatePriceInfo();
 
+  // ----- ライト/ダークモード切替 -----
+  const themeBtn = document.getElementById("themeToggle");
+  if (localStorage.getItem("theme") === "light") {
+    document.body.classList.add("light-mode");
+    themeBtn.textContent = "ダークモードに切替";
+  }
+  themeBtn.addEventListener("click", () => {
+    document.body.classList.toggle("light-mode");
+    const isLight = document.body.classList.contains("light-mode");
+    themeBtn.textContent = isLight ? "ダークモードに切替" : "ライトモードに切替";
+    localStorage.setItem("theme", isLight ? "light" : "dark");
+  });
+
   // 株価を自動取得（バックグラウンド）
   if (stocks.length > 0) updateStockPrices();
 })();
