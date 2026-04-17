@@ -250,6 +250,12 @@
     return Math.round(n).toLocaleString("ja-JP");
   }
 
+  function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, function(c) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
   function renderDashboard() {
     const valid = getValidStocks();
 
@@ -506,7 +512,7 @@
       seg.style.width = pct + "%";
       seg.style.backgroundColor = item.type === "ディフェンシブ" ? "var(--defense-color)" : "var(--cyclical-color)";
       if (pct > 3) seg.textContent = item.name;
-      seg.innerHTML += `<span class="seg-tooltip">${item.name}: ${formatNum(item.val)}円 (${pct.toFixed(1)}%)</span>`;
+      seg.innerHTML += `<span class="seg-tooltip">${escapeHtml(item.name)}: ${formatNum(item.val)}円 (${pct.toFixed(1)}%)</span>`;
       bar.appendChild(seg);
     });
   }
@@ -537,9 +543,9 @@
     tbody.innerHTML = top20.map((s, i) => `
       <tr>
         <td>${i + 1}</td>
-        <td>${s.code}</td>
-        <td>${s.name}</td>
-        <td>${s.industry}</td>
+        <td>${escapeHtml(s.code)}</td>
+        <td>${escapeHtml(s.name)}</td>
+        <td>${escapeHtml(s.industry)}</td>
         <td class="num">${formatNum(s.dividend)}</td>
       </tr>
     `).join("");
@@ -573,9 +579,9 @@
       return `
         <tr>
           <td>${i + 1}</td>
-          <td>${s.code}</td>
-          <td>${s.name}</td>
-          <td>${s.industry}</td>
+          <td>${escapeHtml(s.code)}</td>
+          <td>${escapeHtml(s.name)}</td>
+          <td>${escapeHtml(s.industry)}</td>
           <td class="num">${formatNum(s.shares)}</td>
           <td class="num">${formatNum(s.purchasePrice)}</td>
           <td class="num">${formatNum(s.purchase)}</td>
