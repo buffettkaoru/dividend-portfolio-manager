@@ -1120,7 +1120,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "2.2";
+  const APP_VERSION = "2.3";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());
