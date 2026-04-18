@@ -840,45 +840,60 @@
     document.getElementById("csvFileRakuten").click();
   });
 
+  // ダブルクォート対応CSVパーサー（カンマ入り数値を正しく処理）
+  function parseCsvLine(line) {
+    const result = [];
+    let current = "";
+    let inQuotes = false;
+    for (let c = 0; c < line.length; c++) {
+      const ch = line[c];
+      if (ch === '"') {
+        inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }
+
   function parseRakutenCsv(text) {
     const lines = text.split(/\r?\n/);
     const allStocks = [];
     const nisaList = [];
-    let currentSection = "";
     let i = 0;
 
     while (i < lines.length) {
       const line = lines[i].trim();
 
-      // セクション判定
-      if (line.includes("特定")) currentSection = "tokutei";
-      else if (line.includes("NISA") || line.includes("ニーサ")) currentSection = "nisa";
-
-      // ヘッダー行を探す（楽天証券の各種フォーマットに対応）
-      if ((line.includes("銘柄") && (line.includes("数量") || line.includes("保有"))) ||
-          (line.includes("銘柄コード") || line.includes("ティッカー"))) {
-        const headers = line.split(",").map((h) => h.replace(/"/g, "").trim());
+      // ヘッダー行を探す
+      if (line.includes("銘柄") && (line.includes("数量") || line.includes("保有") || line.includes("口座"))) {
+        const headers = parseCsvLine(line);
         const col = {};
         headers.forEach((h, idx) => {
           if (h.includes("銘柄コード") || h.includes("コード") || h.includes("ティッカー")) col.code = idx;
           else if (h.includes("銘柄") && !h.includes("コード")) col.name = idx;
-          else if (h.includes("数量") || h.includes("保有")) col.shares = idx;
+          else if (h.includes("保有数量") || h.includes("数量")) col.shares = idx;
           else if (h.includes("平均取得") || h.includes("取得単価") || h.includes("買付単価")) col.purchasePrice = idx;
-          else if (h.includes("現在値") || h.includes("時価") || h === "株価") col.currentPrice = idx;
+          else if (h.includes("現在値")) col.currentPrice = idx;
           else if (h.includes("口座")) col.account = idx;
         });
 
-        // 銘柄名の列からコードを抽出する場合（「銘柄」列に「1234 銘柄名」形式）
+        // 銘柄列からコードを抽出する場合
         if (col.code == null && col.name != null) col.codeFromName = true;
 
         i++;
         while (i < lines.length) {
           const dataLine = lines[i].trim();
-          if (!dataLine || dataLine.includes("合計")) { i++; continue; }
-          // 新しいセクションヘッダーなら抜ける
+          if (!dataLine) { i++; continue; }
+          // 合計行や新しいヘッダー行ならスキップ/終了
+          if (dataLine.includes("合計")) { i++; continue; }
           if (dataLine.includes("銘柄") && (dataLine.includes("数量") || dataLine.includes("保有"))) break;
 
-          const cols = dataLine.split(",").map((c) => c.replace(/"/g, "").trim());
+          const cols = parseCsvLine(dataLine);
 
           let code = "";
           let name = "";
@@ -888,10 +903,10 @@
           if (col.name != null) {
             name = cols[col.name] || "";
           }
-          // コード列がない場合、銘柄名から数字を抽出
+          // 「8591 オリックス」形式からコードを抽出
           if (!code && col.codeFromName && name) {
-            const m = name.match(/^(\d{4})/);
-            if (m) { code = m[1]; name = name.replace(/^\d{4}\s*/, ""); }
+            const m = name.match(/^(\d{4})\s+/);
+            if (m) { code = m[1]; name = name.replace(/^\d{4}\s+/, ""); }
           }
 
           code = code.replace(/\s/g, "");
@@ -902,11 +917,10 @@
           const currentPrice = col.currentPrice != null ? parseFloat(cols[col.currentPrice].replace(/[,+]/g, "")) : null;
 
           // 口座種別の判定
-          let section = currentSection;
+          let section = "tokutei";
           if (col.account != null) {
             const acct = cols[col.account] || "";
             if (acct.includes("NISA") || acct.includes("ニーサ")) section = "nisa";
-            else if (acct.includes("特定")) section = "tokutei";
           }
 
           if (!isNaN(shares) && shares > 0) {
@@ -1120,7 +1134,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "2.3";
+  const APP_VERSION = "2.4";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());
