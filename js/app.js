@@ -1022,6 +1022,7 @@
     const lines = text.split(/\r?\n/);
     const allStocks = [];
     const nisaList = [];
+    const fundList = [];
     let i = 0;
 
     while (i < lines.length) {
@@ -1035,8 +1036,9 @@
           if (h.includes("銘柄コード") || h.includes("コード") || h.includes("ティッカー")) col.code = idx;
           else if (h.includes("銘柄") && !h.includes("コード")) col.name = idx;
           else if (h.includes("保有数量") || h.includes("数量")) col.shares = idx;
+          else if (h === "[単位]" && col.sharesUnit == null) col.sharesUnit = idx;
           else if (h.includes("平均取得") || h.includes("取得単価") || h.includes("買付単価")) col.purchasePrice = idx;
-          else if (h.includes("現在値")) col.currentPrice = idx;
+          else if (h.includes("現在値") || h.includes("基準価額")) col.currentPrice = idx;
           else if (h.includes("口座")) col.account = idx;
         });
 
@@ -1068,11 +1070,6 @@
           }
 
           code = code.replace(/\s/g, "");
-          if (!code || !/^(\d{4}|[A-Z]{1,5})$/.test(code)) { i++; continue; }
-
-          const shares = col.shares != null ? parseFloat(cols[col.shares].replace(/[,+]/g, "")) : 0;
-          const purchasePrice = col.purchasePrice != null ? parseFloat(cols[col.purchasePrice].replace(/[,+]/g, "")) : null;
-          const currentPrice = col.currentPrice != null ? parseFloat(cols[col.currentPrice].replace(/[,+]/g, "")) : null;
 
           // 口座種別の判定
           let section = "tokutei";
@@ -1081,9 +1078,32 @@
             if (acct.includes("NISA") || acct.includes("ニーサ")) section = "nisa";
           }
 
-          if (!isNaN(shares) && shares > 0) {
-            allStocks.push({ code, name, shares, purchasePrice, currentPrice, section });
-            if (section === "nisa") nisaList.push({ code, shares });
+          const sharesStr = col.shares != null ? cols[col.shares] : "0";
+          const sharesClean = sharesStr.replace(/[口,+\s]/g, "");
+          const sharesVal = parseFloat(sharesClean);
+          const purchasePrice = col.purchasePrice != null ? parseFloat(cols[col.purchasePrice].replace(/[,+]/g, "")) : null;
+          const currentPrice = col.currentPrice != null ? parseFloat(cols[col.currentPrice].replace(/[,+]/g, "")) : null;
+
+          // [単位]列で株式/投資信託を判定
+          const unitStr = col.sharesUnit != null ? (cols[col.sharesUnit] || "") : "";
+          const isFund = unitStr.includes("口") || sharesStr.includes("口");
+
+          if (code && /^(\d{4}|[A-Z]{1,5})$/.test(code) && !isFund) {
+            if (!isNaN(sharesVal) && sharesVal > 0) {
+              allStocks.push({ code, name, shares: sharesVal, purchasePrice, currentPrice, section });
+              if (section === "nisa") nisaList.push({ code, shares: sharesVal });
+            }
+          } else if (name && !isNaN(sharesVal) && sharesVal > 0 && isFund) {
+            // 「口」単位 → 投資信託として扱う
+            fundList.push({
+              name: name,
+              units: sharesVal,
+              purchasePrice: purchasePrice,
+              currentPrice: currentPrice,
+              distPerUnit: null,
+              distMonths: "",
+              account: section === "nisa" ? "NISA" : "特定"
+            });
           }
           i++;
         }
@@ -1296,7 +1316,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "2.5";
+  const APP_VERSION = "2.6";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());
