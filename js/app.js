@@ -28,6 +28,7 @@
   let stockTypes = loadData(STORAGE_KEYS.stockTypes, []);
   let stocks = loadData(STORAGE_KEYS.stocks, []);
   let nisaItems = loadData(STORAGE_KEYS.nisa, []);
+  let funds = loadData(STORAGE_KEYS.funds, []);
 
   // ----- ナビゲーション -----
   const navLinks = document.querySelectorAll(".nav-link");
@@ -236,6 +237,63 @@
     });
   });
 
+  // ----- 投資信託ページ -----
+  function renderFundTable() {
+    const tbody = document.getElementById("fundBody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    funds.forEach((f, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="checkbox" class="fund-check" data-idx="${i}"></td>
+        <td><input type="text" value="${escapeHtml(f.name || '')}" data-field="name" data-idx="${i}" style="width:200px"></td>
+        <td><input type="number" value="${f.units || ''}" data-field="units" data-idx="${i}" style="width:100px" min="0"></td>
+        <td><input type="number" value="${f.purchasePrice || ''}" data-field="purchasePrice" data-idx="${i}" style="width:80px" min="0" step="0.01"></td>
+        <td><input type="number" value="${f.currentPrice || ''}" data-field="currentPrice" data-idx="${i}" style="width:80px" min="0" step="0.01"></td>
+        <td><input type="number" value="${f.distPerUnit || ''}" data-field="distPerUnit" data-idx="${i}" style="width:100px" min="0" step="0.01"></td>
+        <td><input type="text" value="${f.distMonths || ''}" data-field="distMonths" data-idx="${i}" style="width:100px" placeholder="1,2,3,...12"></td>
+        <td><select data-field="account" data-idx="${i}">
+          <option value="特定" ${f.account === "特定" ? "selected" : ""}>特定</option>
+          <option value="NISA" ${f.account === "NISA" ? "selected" : ""}>NISA</option>
+        </select></td>
+      `;
+      tr.querySelectorAll("input, select").forEach((el) => {
+        if (el.type === "checkbox") return;
+        el.addEventListener("change", (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          const field = e.target.dataset.field;
+          let val = e.target.value;
+          if (["units", "purchasePrice", "currentPrice", "distPerUnit"].includes(field)) {
+            val = val === "" ? null : parseFloat(val);
+          }
+          funds[idx][field] = val;
+          saveData(STORAGE_KEYS.funds, funds);
+        });
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById("addFundBtn").addEventListener("click", () => {
+    funds.push({ name: "", units: null, purchasePrice: null, currentPrice: null, distPerUnit: null, distMonths: "", account: "特定" });
+    saveData(STORAGE_KEYS.funds, funds);
+    renderFundTable();
+  });
+
+  document.getElementById("deleteFundSelectedBtn").addEventListener("click", () => {
+    const checked = document.querySelectorAll("#fundBody .fund-check:checked");
+    const indices = Array.from(checked).map((c) => parseInt(c.dataset.idx)).sort((a, b) => b - a);
+    indices.forEach((i) => funds.splice(i, 1));
+    saveData(STORAGE_KEYS.funds, funds);
+    renderFundTable();
+  });
+
+  document.getElementById("fundSelectAll").addEventListener("change", (e) => {
+    document.querySelectorAll("#fundBody .fund-check").forEach((c) => {
+      c.checked = e.target.checked;
+    });
+  });
+
   // ----- ダッシュボード -----
   let industryChartInstance = null;
   let yieldDistChartInstance = null;
@@ -309,9 +367,38 @@
       }
     });
 
-    // 税引後配当金の計算（NISA分は非課税、特定口座は20.315%課税）
+    // 投資信託の分配金を加算
+    let totalFundDist = 0;
+    let totalFundDistAfterTax = 0;
+    let totalFundValuation = 0;
+    let totalFundPurchase = 0;
     const TAX_RATE = 0.20315;
-    let totalDivAfterTax = 0;
+    funds.forEach((f) => {
+      if (!f.units || !f.distPerUnit) return;
+      const dist = (f.distPerUnit / 10000) * f.units; // 万口あたり→実際の分配金
+      totalFundDist += dist;
+      if (f.account === "NISA") {
+        totalFundDistAfterTax += dist;
+      } else {
+        totalFundDistAfterTax += dist * (1 - TAX_RATE);
+      }
+      if (f.currentPrice && f.units) totalFundValuation += (f.currentPrice / 10000) * f.units;
+      if (f.purchasePrice && f.units) totalFundPurchase += (f.purchasePrice / 10000) * f.units;
+
+      // 月別配当に加算
+      if (f.distMonths) {
+        const fMonths = f.distMonths.split(",").map((m) => parseInt(m.trim())).filter((m) => m >= 1 && m <= 12);
+        const perMonth = fMonths.length > 0 ? dist / fMonths.length : 0;
+        fMonths.forEach((m) => { monthlyDiv[m] += perMonth; });
+      }
+    });
+
+    totalDividend += totalFundDist;
+    totalValuation += totalFundValuation;
+    totalPurchase += totalFundPurchase;
+
+    // 税引後配当金の計算（NISA分は非課税、特定口座は20.315%課税）
+    let totalDivAfterTax = totalFundDistAfterTax;
     valid.forEach((s) => {
       const dividend = (s.divPerShare || 0) * s.shares;
       const nisaItem = nisaItems.find((n) => n.code === s.code);
@@ -666,6 +753,7 @@
     const lines = text.split(/\r?\n/);
     const allStocks = [];   // 全銘柄（特定+NISA合算用）
     const nisaList = [];    // NISA銘柄
+    const fundList = [];    // 投資信託
     let currentSection = ""; // 現在のセクション
 
     let i = 0;
@@ -677,11 +765,61 @@
         currentSection = "tokutei";
       } else if (line.includes("NISA預り") && line.includes("成長投資枠")) {
         currentSection = "nisa";
-      } else if (line.includes("つみたて投資枠") || line.includes("投資信託")) {
-        currentSection = "skip";
+      } else if (line.includes("つみたて投資枠")) {
+        currentSection = "tsumitate";
+      } else if (line.includes("投資信託") && !line.includes("つみたて")) {
+        currentSection = "fund";
       }
 
-      // ヘッダー行を見つけたらデータを読む
+      // 投資信託ヘッダーを見つけたらパース
+      if (line.includes("ファンド名") && currentSection !== "skip") {
+        const fHeaders = line.split(",").map((h) => h.replace(/"/g, "").trim());
+        const fCol = {};
+        fHeaders.forEach((h, idx) => {
+          if (h === "ファンド名") fCol.name = idx;
+          else if (h.includes("保有口数")) fCol.units = idx;
+          else if (h.includes("取得単価")) fCol.purchasePrice = idx;
+          else if (h.includes("基準価額")) fCol.currentPrice = idx;
+          else if (h.includes("分配金受取方法")) fCol.distMethod = idx;
+        });
+
+        i++;
+        while (i < lines.length) {
+          const dataLine = lines[i].trim();
+          if (!dataLine || dataLine.includes("合計") || dataLine.includes("評価額")
+              || dataLine.includes("投資信託") || dataLine.includes("株式")) {
+            break;
+          }
+          const cols = dataLine.split(",").map((c) => c.replace(/"/g, "").trim());
+          const fname = fCol.name != null ? (cols[fCol.name] || "") : "";
+          if (!fname) { i++; continue; }
+
+          const unitsStr = fCol.units != null ? cols[fCol.units] : "0";
+          const funits = parseFloat(unitsStr.replace(/[口,+]/g, ""));
+          const fpp = fCol.purchasePrice != null ? parseFloat(cols[fCol.purchasePrice].replace(/[,+]/g, "")) : null;
+          const fcp = fCol.currentPrice != null ? parseFloat(cols[fCol.currentPrice].replace(/[,+]/g, "")) : null;
+          const method = fCol.distMethod != null ? cols[fCol.distMethod] : "";
+
+          // 再投資型はスキップ（分配金を出さないため）
+          if (method.includes("再投資")) { i++; continue; }
+
+          if (!isNaN(funits) && funits > 0) {
+            fundList.push({
+              name: fname,
+              units: funits,
+              purchasePrice: isNaN(fpp) ? null : fpp,
+              currentPrice: isNaN(fcp) ? null : fcp,
+              distPerUnit: null,
+              distMonths: "",
+              account: currentSection === "nisa" ? "NISA" : "特定"
+            });
+          }
+          i++;
+        }
+        continue;
+      }
+
+      // 株式ヘッダー行を見つけたらデータを読む
       if (line.includes("銘柄コード") && line.includes("銘柄名称")) {
         const headers = line.split(",").map((h) => h.replace(/"/g, "").trim());
         const col = {};
@@ -830,8 +968,28 @@
       renderNisaTable();
     }
 
-    const msg = `CSV読込完了: ${added}件追加、${updated}件更新` +
-      (result.nisa.length > 0 ? `、NISA ${result.nisa.length}件反映` : "");
+    // 投資信託データの統合
+    let fundAdded = 0;
+    if (result.funds && result.funds.length > 0) {
+      result.funds.forEach((f) => {
+        const existing = funds.find((ef) => ef.name === f.name);
+        if (existing) {
+          existing.units = f.units;
+          if (f.purchasePrice != null) existing.purchasePrice = f.purchasePrice;
+          if (f.currentPrice != null) existing.currentPrice = f.currentPrice;
+          if (f.account) existing.account = f.account;
+        } else {
+          funds.push(f);
+          fundAdded++;
+        }
+      });
+      saveData(STORAGE_KEYS.funds, funds);
+      renderFundTable();
+    }
+
+    let msg = `CSV読込完了: ${added}件追加、${updated}件更新`;
+    if (result.nisa.length > 0) msg += `、NISA ${result.nisa.length}件反映`;
+    if (fundAdded > 0) msg += `、投資信託 ${fundAdded}件追加`;
     showCsvMessage(msg, false);
   }
 
@@ -955,7 +1113,7 @@
         };
       }
     });
-    return { stocks: Object.values(merged), nisa: nisaList };
+    return { stocks: Object.values(merged), nisa: nisaList, funds: fundList };
   }
 
   document.getElementById("csvFileRakuten").addEventListener("change", (e) => {
@@ -992,6 +1150,7 @@
       stockTypes,
       stocks,
       nisaItems,
+      funds,
       exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
@@ -1019,10 +1178,12 @@
         if (data.stockTypes) { stockTypes = data.stockTypes; saveData(STORAGE_KEYS.stockTypes, stockTypes); }
         if (data.stocks) { stocks = data.stocks; saveData(STORAGE_KEYS.stocks, stocks); }
         if (data.nisaItems) { nisaItems = data.nisaItems; saveData(STORAGE_KEYS.nisa, nisaItems); }
+        if (data.funds) { funds = data.funds; saveData(STORAGE_KEYS.funds, funds); }
         // UIを再描画
         initSettings();
         renderEntryTable();
         renderNisaTable();
+        renderFundTable();
         alert("データを読み込みました。");
       } catch {
         alert("ファイルの読み込みに失敗しました。");
@@ -1115,6 +1276,7 @@
   initSettings();
   renderEntryTable();
   renderNisaTable();
+  renderFundTable();
   updatePriceInfo();
 
   // ----- ライト/ダークモード切替 -----
@@ -1134,7 +1296,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "2.4";
+  const APP_VERSION = "2.5";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());

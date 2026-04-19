@@ -26,6 +26,7 @@
       <li><a href="#" class="nav-link" data-page="dashboard">管理シート</a></li>
       <li><a href="#" class="nav-link" data-page="entry">銘柄入力</a></li>
       <li><a href="#" class="nav-link" data-page="nisa">NISA管理</a></li>
+      <li><a href="#" class="nav-link" data-page="funds">投資信託</a></li>
     </ul>
     <div class="sidebar-footer">
       <button id="exportBtn" class="btn btn-outline">データ書出</button>
@@ -296,6 +297,41 @@
         </div>
       </div>
     </div>
+
+    <!-- ===== 投資信託ページ ===== -->
+    <div class="page" id="page-funds">
+      <h2 class="page-title">投資信託（分配金管理）</h2>
+      <p class="page-desc">分配金を受け取っている投資信託を入力してください。※再投資型（分配金なし）のファンドは入力不要です。</p>
+
+      <div class="entry-form-area">
+        <div class="entry-toolbar">
+          <button class="btn btn-primary" id="addFundBtn">+ ファンド追加</button>
+          <button class="btn btn-danger" id="deleteFundSelectedBtn">選択削除</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="fundTable">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="fundSelectAll"></th>
+                <th>ファンド名</th>
+                <th>保有口数</th>
+                <th>取得単価</th>
+                <th>基準価額</th>
+                <th>年間分配金(円/万口)</th>
+                <th>分配月(カンマ区切)</th>
+                <th>口座</th>
+              </tr>
+            </thead>
+            <tbody id="fundBody">
+            </tbody>
+          </table>
+        </div>
+        <p class="setting-note">※年間分配金は「1万口あたりの年間合計分配金（円）」を入力してください。</p>
+        <p class="setting-note">※SBI証券のCSV読込時に自動登録されます（受取型のみ）。</p>
+      </div>
+    </div>
+
   </div>
 
   <script src="js/data.js"></script>

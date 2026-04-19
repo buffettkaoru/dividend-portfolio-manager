@@ -295,5 +295,6 @@ const STORAGE_KEYS = {
   stocks: "portfolio_stocks",
   industryTypes: "portfolio_industry_types",
   stockTypes: "portfolio_stock_types",
-  nisa: "portfolio_nisa"
+  nisa: "portfolio_nisa",
+  funds: "portfolio_funds"
 };
