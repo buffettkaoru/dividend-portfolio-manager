@@ -1028,18 +1028,20 @@
     while (i < lines.length) {
       const line = lines[i].trim();
 
-      // ヘッダー行を探す
-      if (line.includes("銘柄") && (line.includes("数量") || line.includes("保有") || line.includes("口座"))) {
+      // ヘッダー行を探す（複数パターンに対応）
+      if ((line.includes("銘柄") && (line.includes("数量") || line.includes("保有") || line.includes("口座") || line.includes("取得") || line.includes("評価")))
+          || (line.includes("コード") && (line.includes("数量") || line.includes("取得")))
+          || (line.includes("銘柄名") && line.includes("保有"))) {
         const headers = parseCsvLine(line);
         const col = {};
         headers.forEach((h, idx) => {
-          if (h.includes("銘柄コード") || h.includes("コード") || h.includes("ティッカー")) col.code = idx;
-          else if (h.includes("銘柄") && !h.includes("コード")) col.name = idx;
-          else if (h.includes("保有数量") || h.includes("数量")) col.shares = idx;
+          if (h.includes("銘柄コード") || h === "コード" || h.includes("ティッカー") || h.includes("コード/ティッカー")) col.code = idx;
+          else if ((h.includes("銘柄") || h.includes("ファンド")) && !h.includes("コード")) col.name = idx;
+          else if (h.includes("保有数量") || h.includes("数量") || h.includes("保有株数") || h.includes("残高")) col.shares = idx;
           else if (h === "[単位]" && col.sharesUnit == null) col.sharesUnit = idx;
-          else if (h.includes("平均取得") || h.includes("取得単価") || h.includes("買付単価")) col.purchasePrice = idx;
-          else if (h.includes("現在値") || h.includes("基準価額")) col.currentPrice = idx;
-          else if (h.includes("口座")) col.account = idx;
+          else if (h.includes("平均取得") || h.includes("取得単価") || h.includes("買付単価") || h.includes("取得価格")) col.purchasePrice = idx;
+          else if (h.includes("現在値") || h.includes("基準価額") || h.includes("時価")) col.currentPrice = idx;
+          else if (h.includes("口座") || h.includes("預り区分")) col.account = idx;
         });
 
         // 銘柄列からコードを抽出する場合
@@ -1143,12 +1145,14 @@
     reader.onload = (ev) => {
       let text = ev.target.result;
       const result = parseRakutenCsv(text);
-      if (result.stocks.length === 0) {
+      const hasData = result.stocks.length > 0 || (result.funds && result.funds.length > 0);
+      if (!hasData) {
         const reader2 = new FileReader();
         reader2.onload = (ev2) => {
           const result2 = parseRakutenCsv(ev2.target.result);
-          if (result2.stocks.length === 0) {
-            showCsvMessage("CSVから銘柄を読み取れませんでした。楽天証券の「保有商品一覧」CSVか確認してください。", true);
+          const hasData2 = result2.stocks.length > 0 || (result2.funds && result2.funds.length > 0);
+          if (!hasData2) {
+            showCsvMessage("CSVから銘柄を読み取れませんでした。楽天証券サイトの「保有商品一覧」→「CSVで保存」からダウンロードしたファイルをお使いください。Excelで開いて保存し直したファイルは使えません。", true);
             return;
           }
           mergeImportedStocks(result2);
@@ -1316,7 +1320,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "2.6";
+  const APP_VERSION = "2.7";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());
