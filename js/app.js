@@ -1047,13 +1047,22 @@
         // 銘柄列からコードを抽出する場合
         if (col.code == null && col.name != null) col.codeFromName = true;
 
+        // ヘッダーの前の行からNISA/特定を判定
+        let sectionForBlock = "tokutei";
+        for (let j = Math.max(0, i - 3); j < i; j++) {
+          if (lines[j] && lines[j].includes("NISA")) { sectionForBlock = "nisa"; break; }
+        }
+
         i++;
         while (i < lines.length) {
           const dataLine = lines[i].trim();
           if (!dataLine) { i++; continue; }
-          // 合計行や新しいヘッダー行ならスキップ/終了
+          // 合計行ならスキップ
           if (dataLine.includes("合計")) { i++; continue; }
-          if (dataLine.includes("銘柄") && (dataLine.includes("数量") || dataLine.includes("保有"))) break;
+          // 新しいセクションヘッダーなら中断
+          if (dataLine.includes("サマリー") || dataLine.includes("(サマリ")) break;
+          // 新しいヘッダー行なら中断
+          if ((dataLine.includes("銘柄") || dataLine.includes("コード")) && (dataLine.includes("数量") || dataLine.includes("取得"))) break;
 
           const cols = parseCsvLine(dataLine);
 
@@ -1073,11 +1082,12 @@
 
           code = code.replace(/\s/g, "");
 
-          // 口座種別の判定
-          let section = "tokutei";
+          // 口座種別の判定（列があれば列から、なければセクションヘッダーから）
+          let section = sectionForBlock;
           if (col.account != null) {
             const acct = cols[col.account] || "";
             if (acct.includes("NISA") || acct.includes("ニーサ")) section = "nisa";
+            else if (acct.includes("特定")) section = "tokutei";
           }
 
           const sharesStr = col.shares != null ? cols[col.shares] : "0";
@@ -1320,7 +1330,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "2.7";
+  const APP_VERSION = "2.8";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());
