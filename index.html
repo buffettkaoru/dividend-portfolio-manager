@@ -239,11 +239,10 @@
         <div class="entry-toolbar">
           <button class="btn btn-primary" id="addRowBtn">+ 銘柄追加</button>
           <button class="btn btn-danger" id="deleteSelectedBtn">選択削除</button>
-          <button class="btn btn-csv" id="csvImportBtn">CSV読込（SBI証券）</button>
-          <button class="btn btn-rakuten" id="csvImportRakutenBtn">CSV読込（楽天証券）</button>
-          <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
-          <input type="file" id="csvFileRakuten" accept=".csv,.txt" style="display:none">
+          <button class="btn btn-csv" id="csvImportAutoBtn">CSV読込（自動判別）</button>
+          <input type="file" id="csvFileAuto" accept=".csv,.txt" style="display:none">
           <button class="btn btn-price" id="updatePriceBtn">株価を最新に更新</button>
+          <button class="btn btn-small" id="downloadTemplateBtn">テンプレートCSV</button>
         </div>
         <div id="csvMessage" style="display:none; margin:8px 0; padding:10px; border-radius:6px; font-size:0.85rem;"></div>
 

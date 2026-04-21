@@ -724,9 +724,9 @@
     renderTop20(valid, totalDiv);
   });
 
-  // ----- CSV読込（SBI証券） -----
-  document.getElementById("csvImportBtn").addEventListener("click", () => {
-    document.getElementById("csvFile").click();
+  // ----- CSV読込（自動判別） -----
+  document.getElementById("csvImportAutoBtn").addEventListener("click", () => {
+    document.getElementById("csvFileAuto").click();
   });
 
   document.getElementById("updatePriceBtn").addEventListener("click", async () => {
@@ -902,29 +902,47 @@
     };
   }
 
-  document.getElementById("csvFile").addEventListener("change", (e) => {
+  // 自動判別：SBIとRakutenの両方を試し、多く取れた方を採用
+  function autoDetectAndParse(text) {
+    const sbiResult = parseSbiCsv(text);
+    const rakutenResult = parseRakutenCsv(text);
+    const sbiCount = sbiResult.stocks.length + (sbiResult.funds ? sbiResult.funds.length : 0);
+    const rakutenCount = rakutenResult.stocks.length + (rakutenResult.funds ? rakutenResult.funds.length : 0);
+
+    if (sbiCount === 0 && rakutenCount === 0) return null;
+    if (sbiCount >= rakutenCount) {
+      return { result: sbiResult, broker: "SBI証券" };
+    } else {
+      return { result: rakutenResult, broker: "楽天証券" };
+    }
+  }
+
+  document.getElementById("csvFileAuto").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (ev) => {
       let text = ev.target.result;
-      const result = parseSbiCsv(text);
-      if (result.stocks.length === 0) {
-        // Shift_JISで再読込を試す
-        const reader2 = new FileReader();
-        reader2.onload = (ev2) => {
-          const result2 = parseSbiCsv(ev2.target.result);
-          if (result2.stocks.length === 0) {
-            showCsvMessage("CSVから銘柄を読み取れませんでした。SBI証券の「保有証券」CSVか確認してください。", true);
-            return;
-          }
-          mergeImportedStocks(result2);
-        };
-        reader2.readAsText(file, "Shift_JIS");
+      const detected = autoDetectAndParse(text);
+      if (detected) {
+        showCsvMessage(detected.broker + "のCSVとして読み込みます...", false);
+        mergeImportedStocks(detected.result);
         return;
       }
-      mergeImportedStocks(result);
+      // UTF-8で失敗したらShift_JISで再試行
+      const reader2 = new FileReader();
+      reader2.onload = (ev2) => {
+        const text2 = ev2.target.result;
+        const detected2 = autoDetectAndParse(text2);
+        if (detected2) {
+          showCsvMessage(detected2.broker + "のCSVとして読み込みます...", false);
+          mergeImportedStocks(detected2.result);
+          return;
+        }
+        showCsvMessage("CSVから銘柄を読み取れませんでした。SBI証券またはRakuten証券の「保有商品一覧」CSVをお使いください。他の証券会社の方は「テンプレートCSV」をご利用ください。", true);
+      };
+      reader2.readAsText(file, "Shift_JIS");
     };
     reader.readAsText(file, "UTF-8");
     e.target.value = "";
@@ -994,8 +1012,20 @@
   }
 
   // ----- CSV読込（楽天証券） -----
-  document.getElementById("csvImportRakutenBtn").addEventListener("click", () => {
-    document.getElementById("csvFileRakuten").click();
+  // テンプレートCSVダウンロード
+  document.getElementById("downloadTemplateBtn").addEventListener("click", () => {
+    const template = "銘柄コード,銘柄名,保有数量,取得単価,現在値,口座\n" +
+      "8591,オリックス,100,2156,5069,特定\n" +
+      "9432,NTT,1000,146,153,特定\n" +
+      "2914,JT,200,3916,5847,NISA\n";
+    const blob = new Blob([template], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "portfolio_template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    showCsvMessage("テンプレートCSVをダウンロードしました。証券会社のデータを入力して読み込んでください。", false);
   });
 
   // ダブルクォート対応CSVパーサー（カンマ入り数値を正しく処理）
@@ -1148,33 +1178,7 @@
     return { stocks: Object.values(merged), nisa: nisaList, funds: fundList };
   }
 
-  document.getElementById("csvFileRakuten").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      let text = ev.target.result;
-      const result = parseRakutenCsv(text);
-      const hasData = result.stocks.length > 0 || (result.funds && result.funds.length > 0);
-      if (!hasData) {
-        const reader2 = new FileReader();
-        reader2.onload = (ev2) => {
-          const result2 = parseRakutenCsv(ev2.target.result);
-          const hasData2 = result2.stocks.length > 0 || (result2.funds && result2.funds.length > 0);
-          if (!hasData2) {
-            showCsvMessage("CSVから銘柄を読み取れませんでした。楽天証券サイトの「保有商品一覧」→「CSVで保存」からダウンロードしたファイルをお使いください。Excelで開いて保存し直したファイルは使えません。", true);
-            return;
-          }
-          mergeImportedStocks(result2);
-        };
-        reader2.readAsText(file, "Shift_JIS");
-        return;
-      }
-      mergeImportedStocks(result);
-    };
-    reader.readAsText(file, "UTF-8");
-    e.target.value = "";
-  });
+  // テンプレートCSVの読み込みもautoDetectで対応（銘柄コード列があれば読める）
 
   // ----- エクスポート / インポート -----
   document.getElementById("exportBtn").addEventListener("click", () => {
@@ -1330,7 +1334,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "2.8";
+  const APP_VERSION = "3.0";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());
