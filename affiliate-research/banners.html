@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>摂食障害サイト用アフィリエイトバナー集</title>
+<style>
+body { font-family: "Hiragino Sans", "Yu Gothic", sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #f7f6f2; color: #333; }
+h1 { border-bottom: 3px solid #c89b9b; padding-bottom: 10px; }
+h2 { background: #e8dede; padding: 10px 15px; border-left: 5px solid #c89b9b; margin-top: 40px; }
+.code-note { background: #fff8e7; border: 1px solid #e6cf8b; padding: 10px 15px; margin: 10px 0; font-size: 14px; border-radius: 4px; }
+pre { background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 13px; }
+.preview { margin: 20px 0; padding: 20px; background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+/* ========== バナー1: オンラインカウンセリング（優しい誘導型） ========== */
+.banner-counseling {
+  display: flex; align-items: center; gap: 20px;
+  background: linear-gradient(135deg, #f5e6e0 0%, #e8d5cd 100%);
+  border-radius: 12px; padding: 24px; text-decoration: none; color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+  max-width: 680px;
+}
+.banner-counseling:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(200,155,155,0.3); }
+.banner-counseling .icon { font-size: 48px; flex-shrink: 0; }
+.banner-counseling .body { flex: 1; }
+.banner-counseling .label { font-size: 12px; color: #8b6e65; font-weight: 600; letter-spacing: 1px; }
+.banner-counseling .title { font-size: 20px; font-weight: 700; margin: 6px 0; color: #5a3e36; line-height: 1.4; }
+.banner-counseling .desc { font-size: 14px; color: #6b5550; line-height: 1.6; }
+.banner-counseling .cta { display: inline-block; margin-top: 10px; background: #c89b9b; color: white; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+
+/* ========== バナー2: オンライン診療（信頼感重視） ========== */
+.banner-clinic {
+  display: block; background: #fff; border: 2px solid #a8c4d4;
+  border-radius: 10px; padding: 20px 24px; text-decoration: none; color: inherit;
+  max-width: 680px; position: relative;
+}
+.banner-clinic:hover { background: #f4f9fc; }
+.banner-clinic .tag { display: inline-block; background: #4a7a94; color: white; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 10px; }
+.banner-clinic .title { font-size: 19px; font-weight: 700; color: #2d4a5c; margin: 0 0 8px; }
+.banner-clinic .desc { font-size: 14px; color: #556; line-height: 1.6; margin-bottom: 12px; }
+.banner-clinic .features { display: flex; gap: 15px; flex-wrap: wrap; font-size: 13px; color: #4a7a94; margin-bottom: 12px; }
+.banner-clinic .features span::before { content: "✓ "; font-weight: bold; }
+.banner-clinic .cta-area { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #c8d8e0; padding-top: 12px; }
+.banner-clinic .price { font-size: 13px; color: #888; }
+.banner-clinic .btn { background: #4a7a94; color: white; padding: 10px 22px; border-radius: 6px; font-size: 14px; font-weight: 600; }
+
+/* ========== バナー3: 健康診断・人間ドック（清潔感） ========== */
+.banner-checkup {
+  background: linear-gradient(to right, #e8f4ea, #d5e9d8);
+  border-radius: 12px; padding: 22px; text-decoration: none; color: inherit;
+  max-width: 680px; display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center;
+}
+.banner-checkup:hover { background: linear-gradient(to right, #dbedde, #c5dfc9); }
+.banner-checkup .emoji { font-size: 42px; }
+.banner-checkup .title { font-size: 18px; font-weight: 700; color: #2d5a3a; margin-bottom: 4px; }
+.banner-checkup .desc { font-size: 13px; color: #4a6a55; }
+.banner-checkup .arrow { font-size: 28px; color: #5a8a68; }
+
+/* ========== バナー4: 緊急相談窓口（信頼構築・無料） ========== */
+.banner-helpline {
+  background: #fff; border: 2px dashed #d4a5a5; border-radius: 10px;
+  padding: 18px 22px; max-width: 680px;
+}
+.banner-helpline .hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.banner-helpline .hdr-icon { font-size: 20px; }
+.banner-helpline .hdr-text { font-size: 15px; font-weight: 700; color: #a05555; }
+.banner-helpline ul { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8; color: #555; }
+.banner-helpline a { color: #a05555; text-decoration: none; font-weight: 600; }
+
+/* ========== バナー5: 記事下の大型CTA（比較型） ========== */
+.banner-compare {
+  background: #fdfaf5; border: 1px solid #e6d7c0; border-radius: 12px;
+  padding: 24px; max-width: 720px;
+}
+.banner-compare .hdr { font-size: 14px; color: #a08860; font-weight: 600; margin-bottom: 6px; letter-spacing: 1px; }
+.banner-compare .ttl { font-size: 22px; font-weight: 700; color: #5a4630; margin-bottom: 18px; }
+.banner-compare table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; border-radius: 8px; overflow: hidden; }
+.banner-compare th, .banner-compare td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f0e6d5; }
+.banner-compare th { background: #f5ebd8; color: #6b5338; font-weight: 700; }
+.banner-compare .ok { color: #5a8a68; font-weight: bold; }
+.banner-compare .btn-sm { display: inline-block; background: #c89b6a; color: white; padding: 6px 14px; border-radius: 4px; font-size: 12px; text-decoration: none; font-weight: 600; }
+.banner-compare .btn-sm:hover { background: #b08a5a; }
+</style>
+</head>
+<body>
+
+<h1>摂食障害サイト用 アフィリエイトバナー集</h1>
+<p>WordPressの「カスタムHTML」ブロックにコピペで使えます。広告リンク部分の<code>href="#"</code>をASPで取得したアフィリエイトURLに差し替えてください。</p>
+
+<!-- ======================================================= -->
+<h2>1. オンラインカウンセリング用バナー（cotree / Unlace / mentally）</h2>
+
+<div class="preview">
+<a href="#" class="banner-counseling" rel="nofollow sponsored">
+  <div class="icon">💭</div>
+  <div class="body">
+    <div class="label">ONLINE COUNSELING</div>
+    <div class="title">ひとりで抱えこまないで。<br>自宅から話せるカウンセリング</div>
+    <div class="desc">臨床心理士・公認心理師にオンラインで相談できます。予約も匿名もOK。</div>
+    <span class="cta">無料登録して話を聞いてもらう →</span>
+  </div>
+</a>
+</div>
+
+<div class="code-note">記事途中 or プロフィール下に配置。強い売り込みは避け「相談できる場所がある」と伝える文脈で使用。</div>
+
+<pre>&lt;a href="ASPリンクをここに" class="banner-counseling" rel="nofollow sponsored"&gt;
+  &lt;div class="icon"&gt;💭&lt;/div&gt;
+  &lt;div class="body"&gt;
+    &lt;div class="label"&gt;ONLINE COUNSELING&lt;/div&gt;
+    &lt;div class="title"&gt;ひとりで抱えこまないで。&lt;br&gt;自宅から話せるカウンセリング&lt;/div&gt;
+    &lt;div class="desc"&gt;臨床心理士・公認心理師にオンラインで相談できます。予約も匿名もOK。&lt;/div&gt;
+    &lt;span class="cta"&gt;無料登録して話を聞いてもらう →&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/a&gt;</pre>
+
+<!-- ======================================================= -->
+<h2>2. オンライン心療内科バナー（クリニックフォア / DMMオンラインクリニック）</h2>
+
+<div class="preview">
+<a href="#" class="banner-clinic" rel="nofollow sponsored">
+  <span class="tag">ONLINE CLINIC</span>
+  <div class="title">通院しなくても診察を受けられます</div>
+  <div class="desc">スマホから医師に相談。処方薬は自宅に届きます。保険適用の診療にも対応。</div>
+  <div class="features">
+    <span>スマホだけで受診</span>
+    <span>予約も24時間</span>
+    <span>薬は自宅配送</span>
+  </div>
+  <div class="cta-area">
+    <span class="price">初診からオンラインOK</span>
+    <span class="btn">診察を予約する →</span>
+  </div>
+</a>
+</div>
+
+<pre>&lt;a href="ASPリンクをここに" class="banner-clinic" rel="nofollow sponsored"&gt;
+  &lt;span class="tag"&gt;ONLINE CLINIC&lt;/span&gt;
+  &lt;div class="title"&gt;通院しなくても診察を受けられます&lt;/div&gt;
+  &lt;div class="desc"&gt;スマホから医師に相談。処方薬は自宅に届きます。保険適用の診療にも対応。&lt;/div&gt;
+  &lt;div class="features"&gt;
+    &lt;span&gt;スマホだけで受診&lt;/span&gt;
+    &lt;span&gt;予約も24時間&lt;/span&gt;
+    &lt;span&gt;薬は自宅配送&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="cta-area"&gt;
+    &lt;span class="price"&gt;初診からオンラインOK&lt;/span&gt;
+    &lt;span class="btn"&gt;診察を予約する →&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/a&gt;</pre>
+
+<!-- ======================================================= -->
+<h2>3. 健康診断・人間ドックバナー（マーソ / EPARK人間ドック）</h2>
+
+<div class="preview">
+<a href="#" class="banner-checkup" rel="nofollow sponsored">
+  <div class="emoji">🩺</div>
+  <div>
+    <div class="title">摂食障害からの回復に、身体の定期チェックを</div>
+    <div class="desc">全国の医療機関から人間ドック・検診プランを一括検索・予約</div>
+  </div>
+  <div class="arrow">›</div>
+</a>
+</div>
+
+<pre>&lt;a href="ASPリンクをここに" class="banner-checkup" rel="nofollow sponsored"&gt;
+  &lt;div class="emoji"&gt;🩺&lt;/div&gt;
+  &lt;div&gt;
+    &lt;div class="title"&gt;摂食障害からの回復に、身体の定期チェックを&lt;/div&gt;
+    &lt;div class="desc"&gt;全国の医療機関から人間ドック・検診プランを一括検索・予約&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="arrow"&gt;›&lt;/div&gt;
+&lt;/a&gt;</pre>
+
+<!-- ======================================================= -->
+<h2>4. 緊急相談窓口バナー（信頼構築・アフィリエイトではない）</h2>
+
+<div class="preview">
+<div class="banner-helpline">
+  <div class="hdr">
+    <span class="hdr-icon">🆘</span>
+    <span class="hdr-text">いま、つらい方へ。無料で話せる相談窓口</span>
+  </div>
+  <ul>
+    <li><strong>よりそいホットライン</strong>：<a href="tel:0120279338">0120-279-338</a>（24時間・無料）</li>
+    <li><strong>いのちの電話</strong>：<a href="tel:0120783556">0120-783-556</a>（毎日16時〜21時）</li>
+    <li><strong>摂食障害全国支援センター</strong>：<a href="https://www.edportal.jp/" target="_blank" rel="noopener">公式サイトを開く</a></li>
+  </ul>
+</div>
+</div>
+
+<div class="code-note">アフィリエイト記事の上部 or サイドバーに必ず配置。Googleの E-E-A-T 評価を上げる必須要素。</div>
+
+<pre>&lt;div class="banner-helpline"&gt;
+  &lt;div class="hdr"&gt;
+    &lt;span class="hdr-icon"&gt;🆘&lt;/span&gt;
+    &lt;span class="hdr-text"&gt;いま、つらい方へ。無料で話せる相談窓口&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;ul&gt;
+    &lt;li&gt;&lt;strong&gt;よりそいホットライン&lt;/strong&gt;：&lt;a href="tel:0120279338"&gt;0120-279-338&lt;/a&gt;（24時間・無料）&lt;/li&gt;
+    &lt;li&gt;&lt;strong&gt;いのちの電話&lt;/strong&gt;：&lt;a href="tel:0120783556"&gt;0120-783-556&lt;/a&gt;（毎日16時〜21時）&lt;/li&gt;
+    &lt;li&gt;&lt;strong&gt;摂食障害全国支援センター&lt;/strong&gt;：&lt;a href="https://www.edportal.jp/" target="_blank" rel="noopener"&gt;公式サイトを開く&lt;/a&gt;&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;</pre>
+
+<!-- ======================================================= -->
+<h2>5. 比較表型CTAバナー（記事末尾用・成約率最強）</h2>
+
+<div class="preview">
+<div class="banner-compare">
+  <div class="hdr">COMPARISON</div>
+  <div class="ttl">オンラインカウンセリング3社を比較</div>
+  <table>
+    <thead>
+      <tr>
+        <th>サービス</th>
+        <th>料金（目安）</th>
+        <th>匿名</th>
+        <th>形式</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>cotree</strong></td>
+        <td>¥5,000〜/回</td>
+        <td class="ok">◯</td>
+        <td>ビデオ・文字</td>
+        <td><a href="#" class="btn-sm" rel="nofollow sponsored">公式</a></td>
+      </tr>
+      <tr>
+        <td><strong>Unlace</strong></td>
+        <td>¥6,600〜/週</td>
+        <td class="ok">◯</td>
+        <td>チャット中心</td>
+        <td><a href="#" class="btn-sm" rel="nofollow sponsored">公式</a></td>
+      </tr>
+      <tr>
+        <td><strong>mentally</strong></td>
+        <td>¥4,400〜/回</td>
+        <td class="ok">◯</td>
+        <td>LINE相談</td>
+        <td><a href="#" class="btn-sm" rel="nofollow sponsored">公式</a></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div class="code-note">記事の一番下に配置。複数社を並べることで比較検討ページとしてGoogleに評価され、CVRも向上。</div>
+
+<pre>&lt;!-- 上記「比較表型CTA」のHTMLは長いので同じ class 名でコピペ可能 --&gt;
+&lt;!-- 各 &lt;a href="#"&gt; をASPリンクに置換 --&gt;</pre>
+
+</body>
+</html>
