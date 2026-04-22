@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>摂食障害.net メインバナー集（3種）</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif; background: #f6f2ee; color: #3a332e; line-height: 1.6; }
+.container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+h1.page-title { font-size: 28px; margin-bottom: 8px; color: #5a453a; border-bottom: 3px solid #c89b9b; padding-bottom: 12px; }
+.page-lead { font-size: 14px; color: #8b7568; margin-bottom: 40px; }
+.section-hdr { font-size: 22px; color: #5a453a; margin: 50px 0 10px; padding-left: 14px; border-left: 6px solid #c89b9b; font-family: "Hiragino Sans", sans-serif; }
+.section-desc { font-size: 13px; color: #8b7568; margin-bottom: 20px; font-family: "Hiragino Sans", sans-serif; }
+pre { background: #2d2d2d; color: #f8f8f2; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 12px; margin-top: 20px; font-family: "SF Mono", Menlo, monospace; }
+.preview-wrap { border: 1px dashed #d4c5b8; padding: 30px 20px; border-radius: 8px; background: white; }
+
+/* ========================================================
+   バナーA：優しい和のトーン（最推奨・温かみ重視）
+======================================================== */
+.banner-a {
+  position: relative;
+  background: linear-gradient(135deg, #fdf4ef 0%, #f5e4d7 50%, #e8d1c0 100%);
+  border-radius: 16px;
+  padding: 80px 60px;
+  overflow: hidden;
+  max-width: 1200px;
+  box-shadow: 0 10px 40px rgba(200, 155, 130, 0.15);
+}
+.banner-a::before {
+  content: "";
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.banner-a::after {
+  content: "";
+  position: absolute;
+  bottom: -60px; left: 10%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(200, 155, 155, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.banner-a .inner { position: relative; z-index: 2; max-width: 620px; }
+.banner-a .sub {
+  font-family: "Hiragino Sans", sans-serif;
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: #a87a5d;
+  margin-bottom: 18px;
+  font-weight: 500;
+}
+.banner-a h1 {
+  font-size: 42px;
+  line-height: 1.5;
+  color: #5a3e2e;
+  margin-bottom: 22px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+.banner-a h1 .accent { color: #b4704f; }
+.banner-a .lead {
+  font-family: "Hiragino Sans", sans-serif;
+  font-size: 16px;
+  color: #6b5446;
+  margin-bottom: 32px;
+  line-height: 1.9;
+}
+.banner-a .meta {
+  font-family: "Hiragino Sans", sans-serif;
+  font-size: 13px;
+  color: #8b6e5a;
+  margin-bottom: 28px;
+  padding: 12px 18px;
+  background: rgba(255,255,255,0.5);
+  border-left: 3px solid #c89b6a;
+  display: inline-block;
+  border-radius: 4px;
+}
+.banner-a .btns { display: flex; gap: 14px; flex-wrap: wrap; font-family: "Hiragino Sans", sans-serif; }
+.banner-a .btn-primary {
+  background: #b4704f;
+  color: white;
+  padding: 14px 32px;
+  border-radius: 30px;
+  font-size: 15px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.banner-a .btn-primary:hover { background: #9c5c3d; transform: translateY(-2px); }
+.banner-a .btn-secondary {
+  background: white;
+  color: #5a3e2e;
+  padding: 14px 28px;
+  border-radius: 30px;
+  font-size: 15px;
+  text-decoration: none;
+  font-weight: 600;
+  border: 1px solid #c89b6a;
+  transition: all 0.2s;
+}
+.banner-a .btn-secondary:hover { background: #f5ebd8; }
+
+/* ========================================================
+   バナーB：ミニマル・信頼感（YMYL/医療系に強い）
+======================================================== */
+.banner-b {
+  background: #fff;
+  border-radius: 12px;
+  padding: 70px 60px;
+  overflow: hidden;
+  max-width: 1200px;
+  border: 1px solid #e8ddd4;
+  position: relative;
+  font-family: "Hiragino Sans", sans-serif;
+}
+.banner-b::before {
+  content: "";
+  position: absolute;
+  top: 0; right: 0;
+  width: 40%; height: 100%;
+  background: linear-gradient(135deg, transparent 0%, #f5ebe0 100%);
+  opacity: 0.6;
+}
+.banner-b .inner { position: relative; z-index: 2; max-width: 640px; }
+.banner-b .badge {
+  display: inline-block;
+  background: #f0e4d4;
+  color: #8b6e5a;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 22px;
+  letter-spacing: 0.5px;
+}
+.banner-b h1 {
+  font-size: 38px;
+  line-height: 1.6;
+  color: #3a2d26;
+  margin-bottom: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.banner-b h1 .highlight {
+  background: linear-gradient(transparent 60%, #f5d6c2 60%);
+  padding: 0 4px;
+}
+.banner-b .lead {
+  font-size: 16px;
+  color: #5a4a40;
+  margin-bottom: 30px;
+  line-height: 1.9;
+}
+.banner-b .facts {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 36px;
+  padding: 18px 24px;
+  background: #faf6f2;
+  border-radius: 8px;
+  border-left: 4px solid #c89b6a;
+}
+.banner-b .fact .num {
+  font-size: 26px;
+  font-weight: 700;
+  color: #b4704f;
+  display: block;
+  line-height: 1.2;
+}
+.banner-b .fact .lbl {
+  font-size: 11px;
+  color: #7a6458;
+  margin-top: 2px;
+}
+.banner-b .cta-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.banner-b .btn-main {
+  background: #3a2d26;
+  color: white;
+  padding: 14px 34px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.2s;
+}
+.banner-b .btn-main:hover { background: #5a453a; }
+.banner-b .link {
+  color: #b4704f;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid transparent;
+}
+.banner-b .link:hover { border-bottom-color: #b4704f; }
+
+/* ========================================================
+   バナーC：希望・あかるさ（ブログ全般向け）
+======================================================== */
+.banner-c {
+  background: linear-gradient(120deg, #fff8f3 0%, #ffe8d9 100%);
+  border-radius: 20px;
+  padding: 60px 50px;
+  max-width: 1200px;
+  position: relative;
+  overflow: hidden;
+  font-family: "Hiragino Sans", sans-serif;
+}
+.banner-c .deco1, .banner-c .deco2, .banner-c .deco3 {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.banner-c .deco1 {
+  top: 15%; right: 8%;
+  width: 140px; height: 140px;
+  background: radial-gradient(circle, #ffcdb5 0%, transparent 70%);
+  opacity: 0.6;
+}
+.banner-c .deco2 {
+  bottom: 10%; right: 25%;
+  width: 70px; height: 70px;
+  background: radial-gradient(circle, #ffb89a 0%, transparent 70%);
+  opacity: 0.4;
+}
+.banner-c .deco3 {
+  top: 40%; right: 3%;
+  width: 40px; height: 40px;
+  background: radial-gradient(circle, #ff9c7a 0%, transparent 70%);
+  opacity: 0.5;
+}
+.banner-c .inner { position: relative; z-index: 2; max-width: 700px; }
+.banner-c .tagline {
+  font-size: 14px;
+  color: #c67651;
+  font-weight: 600;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+.banner-c .tagline::before { content: "🕊 "; }
+.banner-c h1 {
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #3a2216;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+.banner-c h1 .wave {
+  display: inline-block;
+  background: linear-gradient(120deg, #ff9c7a, #c67651);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.banner-c .sub {
+  font-size: 17px;
+  color: #5a4030;
+  line-height: 1.9;
+  margin-bottom: 28px;
+}
+.banner-c .author-box {
+  display: flex; align-items: center; gap: 16px;
+  background: white;
+  padding: 16px 22px;
+  border-radius: 50px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  margin-bottom: 30px;
+  max-width: 500px;
+}
+.banner-c .avatar {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffcdb5, #ff9c7a);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.banner-c .author-text { font-size: 13px; color: #5a4030; line-height: 1.5; }
+.banner-c .author-text strong { color: #3a2216; font-size: 15px; }
+.banner-c .cta {
+  background: linear-gradient(135deg, #ff9c7a, #c67651);
+  color: white;
+  padding: 16px 38px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 16px;
+  display: inline-block;
+  box-shadow: 0 6px 20px rgba(198, 118, 81, 0.3);
+  transition: all 0.2s;
+}
+.banner-c .cta:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(198, 118, 81, 0.4); }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .banner-a, .banner-b, .banner-c { padding: 40px 24px; }
+  .banner-a h1, .banner-c h1 { font-size: 28px; }
+  .banner-b h1 { font-size: 26px; }
+  .banner-b .facts { flex-direction: column; gap: 12px; }
+  .banner-c .author-box { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1 class="page-title">摂食障害.net 用 メインバナー案（3種）</h1>
+  <p class="page-lead">どれかを選んでWordPressに貼り付けてください。文言・色は自由に変更可能です。</p>
+
+  <!-- ============== バナーA ============== -->
+  <div class="section-hdr">A. 優しい和のトーン（最推奨）</div>
+  <p class="section-desc">和テイストで温かみと落ち着き。摂食障害サイトに最も合うトーン。</p>
+
+  <div class="preview-wrap">
+    <div class="banner-a">
+      <div class="inner">
+        <div class="sub">SESSHOKU SHOUGAI .NET</div>
+        <h1>ひとりじゃない。<br>回復への道を、<span class="accent">静かに、確かに。</span></h1>
+        <div class="lead">摂食障害を経験した私が、当事者の視点で「回復」と「セルフケア」について綴っています。<br>あなたのペースで、ゆっくり読み進めてください。</div>
+        <div class="meta">📖 執筆：バフェットかおる ／ 15年の経験を経て</div>
+        <div class="btns">
+          <a href="#" class="btn-primary">最新の記事を読む →</a>
+          <a href="#" class="btn-secondary">相談できる場所を見る</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <pre>&lt;div class="banner-a"&gt;
+  &lt;div class="inner"&gt;
+    &lt;div class="sub"&gt;SESSHOKU SHOUGAI .NET&lt;/div&gt;
+    &lt;h1&gt;ひとりじゃない。&lt;br&gt;回復への道を、&lt;span class="accent"&gt;静かに、確かに。&lt;/span&gt;&lt;/h1&gt;
+    &lt;div class="lead"&gt;摂食障害を経験した私が、当事者の視点で「回復」と「セルフケア」について綴っています。&lt;br&gt;あなたのペースで、ゆっくり読み進めてください。&lt;/div&gt;
+    &lt;div class="meta"&gt;📖 執筆：バフェットかおる ／ 15年の経験を経て&lt;/div&gt;
+    &lt;div class="btns"&gt;
+      &lt;a href="/latest" class="btn-primary"&gt;最新の記事を読む →&lt;/a&gt;
+      &lt;a href="/counseling" class="btn-secondary"&gt;相談できる場所を見る&lt;/a&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;!-- ※CSSは &lt;style&gt; 内の .banner-a 関連を全部コピー --&gt;</pre>
+
+  <!-- ============== バナーB ============== -->
+  <div class="section-hdr">B. ミニマル・信頼感（YMYL対策◎）</div>
+  <p class="section-desc">専門性・権威性が伝わる設計。Google検索評価に効きやすい。</p>
+
+  <div class="preview-wrap">
+    <div class="banner-b">
+      <div class="inner">
+        <span class="badge">当事者が書く回復メディア</span>
+        <h1>摂食障害のことを、<br><span class="highlight">正しく、やさしく。</span></h1>
+        <div class="lead">医療情報と当事者経験をもとに、カウンセリング・治療・家族対応まで網羅。<br>あなたと大切な人の「次の一歩」を応援します。</div>
+        <div class="facts">
+          <div class="fact">
+            <span class="num">15年</span>
+            <span class="lbl">当事者経験</span>
+          </div>
+          <div class="fact">
+            <span class="num">100+</span>
+            <span class="lbl">記事数（予定）</span>
+          </div>
+          <div class="fact">
+            <span class="num">24h</span>
+            <span class="lbl">相談窓口掲載</span>
+          </div>
+        </div>
+        <div class="cta-row">
+          <a href="#" class="btn-main">カテゴリから探す</a>
+          <a href="#" class="link">はじめての方へ →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <pre>&lt;div class="banner-b"&gt;
+  &lt;div class="inner"&gt;
+    &lt;span class="badge"&gt;当事者が書く回復メディア&lt;/span&gt;
+    &lt;h1&gt;摂食障害のことを、&lt;br&gt;&lt;span class="highlight"&gt;正しく、やさしく。&lt;/span&gt;&lt;/h1&gt;
+    &lt;div class="lead"&gt;医療情報と当事者経験をもとに、カウンセリング・治療・家族対応まで網羅。&lt;br&gt;あなたと大切な人の「次の一歩」を応援します。&lt;/div&gt;
+    &lt;div class="facts"&gt;
+      &lt;div class="fact"&gt;&lt;span class="num"&gt;15年&lt;/span&gt;&lt;span class="lbl"&gt;当事者経験&lt;/span&gt;&lt;/div&gt;
+      &lt;div class="fact"&gt;&lt;span class="num"&gt;100+&lt;/span&gt;&lt;span class="lbl"&gt;記事数（予定）&lt;/span&gt;&lt;/div&gt;
+      &lt;div class="fact"&gt;&lt;span class="num"&gt;24h&lt;/span&gt;&lt;span class="lbl"&gt;相談窓口掲載&lt;/span&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="cta-row"&gt;
+      &lt;a href="/categories" class="btn-main"&gt;カテゴリから探す&lt;/a&gt;
+      &lt;a href="/about" class="link"&gt;はじめての方へ →&lt;/a&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+  <!-- ============== バナーC ============== -->
+  <div class="section-hdr">C. 希望・あたたかさ（親しみ重視）</div>
+  <p class="section-desc">一般ブログっぽく、やわらかく親しみやすい設計。YouTube視聴者層に馴染みやすい。</p>
+
+  <div class="preview-wrap">
+    <div class="banner-c">
+      <div class="deco1"></div>
+      <div class="deco2"></div>
+      <div class="deco3"></div>
+      <div class="inner">
+        <div class="tagline">RECOVERY BLOG</div>
+        <h1>あなたの<span class="wave">「回復」</span>を、<br>ここから、一緒に。</h1>
+        <div class="sub">15年の摂食障害経験を経て、今だからこそ伝えたい<br>「自分にやさしくする」暮らしの作り方を発信しています。</div>
+        <div class="author-box">
+          <div class="avatar">🌸</div>
+          <div class="author-text">
+            <strong>バフェットかおる</strong><br>
+            投資家 ／ 摂食障害当事者 ／ 回復メディア運営
+          </div>
+        </div>
+        <a href="#" class="cta">記事を読んでみる ✨</a>
+      </div>
+    </div>
+  </div>
+
+  <pre>&lt;div class="banner-c"&gt;
+  &lt;div class="deco1"&gt;&lt;/div&gt;
+  &lt;div class="deco2"&gt;&lt;/div&gt;
+  &lt;div class="deco3"&gt;&lt;/div&gt;
+  &lt;div class="inner"&gt;
+    &lt;div class="tagline"&gt;RECOVERY BLOG&lt;/div&gt;
+    &lt;h1&gt;あなたの&lt;span class="wave"&gt;「回復」&lt;/span&gt;を、&lt;br&gt;ここから、一緒に。&lt;/h1&gt;
+    &lt;div class="sub"&gt;15年の摂食障害経験を経て、今だからこそ伝えたい&lt;br&gt;「自分にやさしくする」暮らしの作り方を発信しています。&lt;/div&gt;
+    &lt;div class="author-box"&gt;
+      &lt;div class="avatar"&gt;🌸&lt;/div&gt;
+      &lt;div class="author-text"&gt;
+        &lt;strong&gt;バフェットかおる&lt;/strong&gt;&lt;br&gt;
+        投資家 ／ 摂食障害当事者 ／ 回復メディア運営
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;a href="/start" class="cta"&gt;記事を読んでみる ✨&lt;/a&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+</div>
+
+</body>
+</html>
