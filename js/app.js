@@ -53,13 +53,18 @@
     document.getElementById("settingBasis").value = settings.basis;
     document.getElementById("settingBroker").value = settings.broker;
 
-    ["settingScope", "settingDivDisplay", "settingBasis", "settingBroker"].forEach((id) => {
+    const settingMap = {
+      settingScope: "scope",
+      settingDivDisplay: "divDisplay",
+      settingBasis: "basis",
+      settingBroker: "broker"
+    };
+    Object.entries(settingMap).forEach(([id, key]) => {
       document.getElementById(id).addEventListener("change", (e) => {
-        const key = id.replace("setting", "").charAt(0).toLowerCase() + id.replace("setting", "").slice(1);
-        const map = { scope: "scope", divdisplay: "divDisplay", basis: "basis", broker: "broker" };
-        const k = map[id.replace("setting", "").toLowerCase()];
-        settings[k] = e.target.value;
+        settings[key] = e.target.value;
         saveData(STORAGE_KEYS.settings, settings);
+        const dashPage = document.getElementById("page-dashboard");
+        if (dashPage && dashPage.classList.contains("active")) renderDashboard();
       });
     });
 
@@ -109,6 +114,7 @@
           <option value="景気敏感" ${item.type === "景気敏感" ? "selected" : ""}>景気敏感</option>
         </select>
       </td>
+      <td><button class="btn btn-small btn-danger st-del" data-idx="${index}">×</button></td>
     `;
     tr.querySelector(".st-code").addEventListener("change", (e) => {
       stockTypes[index].code = e.target.value;
@@ -117,6 +123,11 @@
     tr.querySelector(".st-type").addEventListener("change", (e) => {
       stockTypes[index].type = e.target.value;
       saveData(STORAGE_KEYS.stockTypes, stockTypes);
+    });
+    tr.querySelector(".st-del").addEventListener("click", () => {
+      stockTypes.splice(index, 1);
+      saveData(STORAGE_KEYS.stockTypes, stockTypes);
+      renderStockTypeTable();
     });
     return tr;
   }
@@ -210,7 +221,10 @@
           if (field === "shares") val = val === "" ? null : parseInt(val);
           nisaItems[idx][field] = val;
           saveData(STORAGE_KEYS.nisa, nisaItems);
-          renderNisaTable();
+          if (field === "code") {
+            const matched = stocks.find((s) => s.code === val);
+            tr.children[2].textContent = matched ? matched.name : "";
+          }
         });
       });
       tbody.appendChild(tr);
@@ -299,8 +313,18 @@
   let yieldDistChartInstance = null;
   let monthlyDivChartInstance = null;
 
+  function isUsCode(code) {
+    return /^[A-Z]{1,5}$/.test(code || "");
+  }
+
   function getValidStocks() {
-    return stocks.filter((s) => s.code && s.shares && s.shares > 0);
+    return stocks.filter((s) => {
+      if (!(s.code && s.shares && s.shares > 0)) return false;
+      const us = isUsCode(s.code);
+      if (settings.scope === "domestic" && us) return false;
+      if (settings.scope === "us" && !us) return false;
+      return true;
+    });
   }
 
   function formatNum(n) {
@@ -418,6 +442,19 @@
     const divYieldCost = totalPurchase > 0 ? (totalDividend / totalPurchase) * 100 : 0;
     const divYieldMarket = totalValuation > 0 ? (totalDividend / totalValuation) * 100 : 0;
 
+    // 税引前/税引後 表示の切替
+    const afterTax = settings.divDisplay === "after_tax";
+    const displayDiv = afterTax ? totalDivAfterTax : totalDividend;
+    const displayYieldMarket = totalValuation > 0 ? (displayDiv / totalValuation) * 100 : 0;
+    const displayYieldCost = totalPurchase > 0 ? (displayDiv / totalPurchase) * 100 : 0;
+    const taxLabel = afterTax ? "税引後" : "税引前";
+    const ytEl = document.getElementById("divYieldTitle");
+    if (ytEl) ytEl.textContent = `配当利回り（時価・${taxLabel}）`;
+    const yocEl = document.getElementById("divYieldYocTitle");
+    if (yocEl) yocEl.textContent = `配当利回り（YOC・${taxLabel}）`;
+    const adEl = document.getElementById("annualDivTitle");
+    if (adEl) adEl.textContent = `年間配当金（${taxLabel}）`;
+
     // サマリー更新
     document.getElementById("totalAssets").innerHTML = formatNum(totalValuation) + '<span class="unit">円</span>';
     document.getElementById("totalPurchase").textContent = formatNum(totalPurchase) + "円";
@@ -427,14 +464,17 @@
     const plPctEl = document.getElementById("totalPLPct");
     plPctEl.textContent = "(" + (totalPL >= 0 ? "+" : "") + totalPLPct.toFixed(2) + "%)";
     plPctEl.className = totalPL >= 0 ? "positive" : "negative";
-    document.getElementById("divYield").innerHTML = divYieldMarket.toFixed(2) + '<span class="unit">%</span>';
-    document.getElementById("divYieldYoc").innerHTML = divYieldCost.toFixed(2) + '<span class="unit">%</span>';
-    document.getElementById("annualDiv").innerHTML = formatNum(totalDividend) + '<span class="unit">円</span>';
+    document.getElementById("divYield").innerHTML = displayYieldMarket.toFixed(2) + '<span class="unit">%</span>';
+    document.getElementById("divYieldYoc").innerHTML = displayYieldCost.toFixed(2) + '<span class="unit">%</span>';
+    document.getElementById("annualDiv").innerHTML = formatNum(afterTax ? totalDivAfterTax : totalDividend) + '<span class="unit">円</span>';
     document.getElementById("annualDivAfterTax").innerHTML = formatNum(totalDivAfterTax) + '<span class="unit">円</span>';
     document.getElementById("stockCount").innerHTML = valid.length + '<span class="unit">銘柄</span>';
 
-    // 業種割合チャート
-    renderIndustryChart(settings.basis === "dividend" ? industryDivMap : industryValMap);
+    // 業種割合チャート（設定に応じて切替）
+    const useDividend = settings.basis === "dividend";
+    const titleEl = document.getElementById("industryChartTitle");
+    if (titleEl) titleEl.textContent = useDividend ? "業種割合（配当金）" : "業種割合（評価額）";
+    renderIndustryChart(useDividend ? industryDivMap : industryValMap);
 
     // 利回り分布チャート
     renderYieldDistChart(yieldBuckets);
@@ -898,7 +938,8 @@
 
     return {
       stocks: Object.values(merged),
-      nisa: nisaList
+      nisa: nisaList,
+      funds: fundList
     };
   }
 
@@ -1266,7 +1307,7 @@
     if (!priceMap) return;
     let updated = false;
     stocks.forEach((s) => {
-      if (/^\d{4}$/.test(s.code) && priceMap[s.code]) {
+      if (priceMap[s.code]) {
         s.currentPrice = priceMap[s.code];
         updated = true;
       }
@@ -1334,7 +1375,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "3.0";
+  const APP_VERSION = "3.1";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());

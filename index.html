@@ -102,7 +102,7 @@
             <h4>個別銘柄 設定</h4>
             <table class="settings-table" id="stockTypeTable">
               <thead>
-                <tr><th>銘柄コード</th><th>景気感応度</th></tr>
+                <tr><th>銘柄コード</th><th>景気感応度</th><th></th></tr>
               </thead>
               <tbody id="stockTypeBody"></tbody>
             </table>
@@ -130,15 +130,15 @@
           </div>
         </div>
         <div class="summary-card">
-          <h3>配当利回り（時価）</h3>
+          <h3 id="divYieldTitle">配当利回り（時価）</h3>
           <p class="big-number" id="divYield">0.00<span class="unit">%</span></p>
         </div>
         <div class="summary-card">
-          <h3>配当利回り（YOC）</h3>
+          <h3 id="divYieldYocTitle">配当利回り（YOC）</h3>
           <p class="big-number" id="divYieldYoc">0.00<span class="unit">%</span></p>
         </div>
         <div class="summary-card">
-          <h3>年間配当金（税引前）</h3>
+          <h3 id="annualDivTitle">年間配当金（税引前）</h3>
           <p class="big-number" id="annualDiv">0<span class="unit">円</span></p>
         </div>
         <div class="summary-card">
@@ -155,7 +155,7 @@
       <!-- チャートセクション -->
       <section class="charts-section">
         <div class="chart-card">
-          <h3>業種割合（配当金）</h3>
+          <h3 id="industryChartTitle">業種割合（配当金）</h3>
           <canvas id="industryChart"></canvas>
         </div>
         <div class="chart-card">
