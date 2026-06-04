@@ -149,8 +149,8 @@
         <td><input type="text" value="${s.code || ""}" data-field="code" data-idx="${i}" style="width:80px"></td>
         <td><input type="text" value="${s.name || ""}" data-field="name" data-idx="${i}" style="width:160px"></td>
         <td>
-          <select data-field="industry" data-idx="${i}">
-            <option value="">選択</option>
+          <select data-field="industry" data-idx="${i}" style="${s.industry ? "" : "border:1px solid #e53935;background:rgba(229,57,53,0.12)"}" title="${s.industry ? "" : "業種を自動判定できませんでした。手動で選択してください"}">
+            <option value="">${s.industry ? "選択" : "⚠ 要選択"}</option>
             ${INDUSTRIES.map((ind) => `<option value="${ind}" ${s.industry === ind ? "selected" : ""}>${ind}</option>`).join("")}
           </select>
         </td>
@@ -171,6 +171,7 @@
           }
           stocks[idx][field] = val;
           saveData(STORAGE_KEYS.stocks, stocks);
+          if (field === "industry") renderEntryTable();
         });
       });
       tbody.appendChild(tr);
@@ -789,6 +790,39 @@
     setTimeout(() => { el.style.display = "none"; }, 5000);
   }
 
+  // 列を安全に取り出す（列数不足でも例外を投げない）
+  function csvStr(cols, idx) {
+    if (idx == null || idx < 0 || idx >= cols.length) return "";
+    return (cols[idx] || "").trim();
+  }
+  // カンマ・記号付き数値を安全にパース（無ければ null）
+  function csvNum(cols, idx) {
+    const raw = csvStr(cols, idx).replace(/[口株,+\s¥￥%]/g, "");
+    if (raw === "" || raw === "-" || raw === "－" || raw === "--") return null;
+    const n = parseFloat(raw);
+    return isNaN(n) ? null : n;
+  }
+
+  // 銘柄コード・銘柄名から業種を推定（データベース→ETF名→米国株の順）
+  function detectIndustry(code, name) {
+    if (!code) {
+      // コードが無くても名前でETFだけは拾う
+      return looksLikeEtf(name) ? "ETF・他" : "";
+    }
+    if (STOCK_INDUSTRY_MAP[code]) return STOCK_INDUSTRY_MAP[code];
+    // 英字コード（ティッカー）＝米国株。ETFマップに無ければ個別株扱い
+    if (/^[A-Z]{1,5}$/.test(code)) return "米国個別株";
+    // 日本のETF・REITは銘柄名から推定（4桁コードでDB未登録のもの）
+    if (looksLikeEtf(name)) return "ETF・他";
+    return ""; // 不明な日本個別株は手動選択
+  }
+
+  // 銘柄名がETF / REIT / 上場投信らしいか
+  function looksLikeEtf(name) {
+    if (!name) return false;
+    return /ETF|ＥＴＦ|上場|ｉシェアーズ|iシェアーズ|ＮＦ・|NF・|MAXIS|ＭＡＸＩＳ|ＮＥＸＴ\s*FUNDS|NEXT\s*FUNDS|上場投信|リート|ＲＥＩＴ|REIT|投資法人|ＥＴＮ|ETN/i.test(name);
+  }
+
   function parseSbiCsv(text) {
     const lines = text.split(/\r?\n/);
     const allStocks = [];   // 全銘柄（特定+NISA合算用）
@@ -813,7 +847,7 @@
 
       // 投資信託ヘッダーを見つけたらパース
       if (line.includes("ファンド名") && currentSection !== "skip") {
-        const fHeaders = line.split(",").map((h) => h.replace(/"/g, "").trim());
+        const fHeaders = parseCsvLine(line);
         const fCol = {};
         fHeaders.forEach((h, idx) => {
           if (h === "ファンド名") fCol.name = idx;
@@ -826,29 +860,30 @@
         i++;
         while (i < lines.length) {
           const dataLine = lines[i].trim();
-          if (!dataLine || dataLine.includes("合計") || dataLine.includes("評価額")
-              || dataLine.includes("投資信託") || dataLine.includes("株式")) {
+          // セクション境界・合計・次ヘッダーでのみ中断（ファンド名に「株式」等が含まれても誤中断しない）
+          if (!dataLine || dataLine.includes("合計")
+              || dataLine.includes("ファンド名") || dataLine.includes("銘柄コード")
+              || /預り\)|（特定|（NISA|サマリー/.test(dataLine)) {
             break;
           }
-          const cols = dataLine.split(",").map((c) => c.replace(/"/g, "").trim());
-          const fname = fCol.name != null ? (cols[fCol.name] || "") : "";
+          const cols = parseCsvLine(dataLine);
+          const fname = csvStr(cols, fCol.name);
           if (!fname) { i++; continue; }
 
-          const unitsStr = fCol.units != null ? cols[fCol.units] : "0";
-          const funits = parseFloat(unitsStr.replace(/[口,+]/g, ""));
-          const fpp = fCol.purchasePrice != null ? parseFloat(cols[fCol.purchasePrice].replace(/[,+]/g, "")) : null;
-          const fcp = fCol.currentPrice != null ? parseFloat(cols[fCol.currentPrice].replace(/[,+]/g, "")) : null;
-          const method = fCol.distMethod != null ? cols[fCol.distMethod] : "";
+          const funits = csvNum(cols, fCol.units);
+          const fpp = csvNum(cols, fCol.purchasePrice);
+          const fcp = csvNum(cols, fCol.currentPrice);
+          const method = csvStr(cols, fCol.distMethod);
 
           // 再投資型はスキップ（分配金を出さないため）
           if (method.includes("再投資")) { i++; continue; }
 
-          if (!isNaN(funits) && funits > 0) {
+          if (funits != null && funits > 0) {
             fundList.push({
               name: fname,
               units: funits,
-              purchasePrice: isNaN(fpp) ? null : fpp,
-              currentPrice: isNaN(fcp) ? null : fcp,
+              purchasePrice: fpp,
+              currentPrice: fcp,
               distPerUnit: null,
               distMonths: "",
               account: currentSection === "nisa" ? "NISA" : "特定"
@@ -861,7 +896,7 @@
 
       // 株式ヘッダー行を見つけたらデータを読む
       if (line.includes("銘柄コード") && line.includes("銘柄名称")) {
-        const headers = line.split(",").map((h) => h.replace(/"/g, "").trim());
+        const headers = parseCsvLine(line);
         const col = {};
         headers.forEach((h, idx) => {
           if (h === "銘柄コード") col.code = idx;
@@ -881,21 +916,21 @@
             break;
           }
 
-          const cols = dataLine.split(",").map((c) => c.replace(/"/g, "").trim());
-          const code = col.code != null ? cols[col.code] : "";
-          if (!code || !/^(\d{4}|[A-Z]{1,5})$/.test(code)) { i++; continue; }
+          const cols = parseCsvLine(dataLine);
+          const code = csvStr(cols, col.code).replace(/\s/g, "");
+          if (!code || !/^(\d{4}[A-Z0-9]?|[A-Z]{1,5})$/.test(code)) { i++; continue; }
 
-          const name = col.name != null ? (cols[col.name] || "") : "";
-          const shares = col.shares != null ? parseFloat(cols[col.shares].replace(/[,+]/g, "")) : 0;
-          const purchasePrice = col.purchasePrice != null ? parseFloat(cols[col.purchasePrice].replace(/[,+]/g, "")) : null;
-          const currentPrice = col.currentPrice != null ? parseFloat(cols[col.currentPrice].replace(/[,+]/g, "")) : null;
+          const name = csvStr(cols, col.name);
+          const shares = csvNum(cols, col.shares);
+          const purchasePrice = csvNum(cols, col.purchasePrice);
+          const currentPrice = csvNum(cols, col.currentPrice);
 
-          if (!isNaN(shares) && shares > 0) {
+          if (shares != null && shares > 0) {
             allStocks.push({
               code, name,
               shares,
-              purchasePrice: isNaN(purchasePrice) ? null : purchasePrice,
-              currentPrice: isNaN(currentPrice) ? null : currentPrice,
+              purchasePrice,
+              currentPrice,
               section: currentSection
             });
 
@@ -926,7 +961,7 @@
         merged[s.code] = {
           code: s.code,
           name: s.name,
-          industry: STOCK_INDUSTRY_MAP[s.code] || "",
+          industry: detectIndustry(s.code, s.name),
           shares: s.shares,
           purchasePrice: s.purchasePrice,
           currentPrice: s.currentPrice,
@@ -945,8 +980,11 @@
 
   // 自動判別：SBIとRakutenの両方を試し、多く取れた方を採用
   function autoDetectAndParse(text) {
-    const sbiResult = parseSbiCsv(text);
-    const rakutenResult = parseRakutenCsv(text);
+    let sbiResult, rakutenResult;
+    try { sbiResult = parseSbiCsv(text); }
+    catch (err) { console.error("SBI解析エラー:", err); sbiResult = { stocks: [], nisa: [], funds: [] }; }
+    try { rakutenResult = parseRakutenCsv(text); }
+    catch (err) { console.error("楽天解析エラー:", err); rakutenResult = { stocks: [], nisa: [], funds: [] }; }
     const sbiCount = sbiResult.stocks.length + (sbiResult.funds ? sbiResult.funds.length : 0);
     const rakutenCount = rakutenResult.stocks.length + (rakutenResult.funds ? rakutenResult.funds.length : 0);
 
@@ -1001,7 +1039,7 @@
         if (imp.purchasePrice != null) existing.purchasePrice = imp.purchasePrice;
         if (imp.currentPrice != null) existing.currentPrice = imp.currentPrice;
         if (imp.name && !existing.name) existing.name = imp.name;
-        if (!existing.industry && STOCK_INDUSTRY_MAP[imp.code]) existing.industry = STOCK_INDUSTRY_MAP[imp.code];
+        if (!existing.industry) existing.industry = detectIndustry(imp.code, imp.name || existing.name);
         updated++;
       } else {
         stocks.push(imp);
@@ -1161,22 +1199,21 @@
             else if (acct.includes("特定")) section = "tokutei";
           }
 
-          const sharesStr = col.shares != null ? cols[col.shares] : "0";
-          const sharesClean = sharesStr.replace(/[口,+\s]/g, "");
-          const sharesVal = parseFloat(sharesClean);
-          const purchasePrice = col.purchasePrice != null ? parseFloat(cols[col.purchasePrice].replace(/[,+]/g, "")) : null;
-          const currentPrice = col.currentPrice != null ? parseFloat(cols[col.currentPrice].replace(/[,+]/g, "")) : null;
+          const sharesStr = csvStr(cols, col.shares);
+          const sharesVal = csvNum(cols, col.shares);
+          const purchasePrice = csvNum(cols, col.purchasePrice);
+          const currentPrice = csvNum(cols, col.currentPrice);
 
           // [単位]列で株式/投資信託を判定
-          const unitStr = col.sharesUnit != null ? (cols[col.sharesUnit] || "") : "";
+          const unitStr = csvStr(cols, col.sharesUnit);
           const isFund = unitStr.includes("口") || sharesStr.includes("口");
 
-          if (code && /^(\d{4}|[A-Z]{1,5})$/.test(code) && !isFund) {
-            if (!isNaN(sharesVal) && sharesVal > 0) {
+          if (code && /^(\d{4}[A-Z0-9]?|[A-Z]{1,5})$/.test(code) && !isFund) {
+            if (sharesVal != null && sharesVal > 0) {
               allStocks.push({ code, name, shares: sharesVal, purchasePrice, currentPrice, section });
               if (section === "nisa") nisaList.push({ code, shares: sharesVal });
             }
-          } else if (name && !isNaN(sharesVal) && sharesVal > 0 && isFund) {
+          } else if (name && sharesVal != null && sharesVal > 0 && isFund) {
             // 「口」単位 → 投資信託として扱う
             fundList.push({
               name: name,
@@ -1209,7 +1246,7 @@
         const divData = STOCK_DIVIDEND_MAP[s.code];
         merged[s.code] = {
           code: s.code, name: s.name,
-          industry: STOCK_INDUSTRY_MAP[s.code] || "",
+          industry: detectIndustry(s.code, s.name),
           shares: s.shares, purchasePrice: s.purchasePrice, currentPrice: s.currentPrice,
           divPerShare: divData ? divData.div : null,
           divMonths: divData ? divData.months : ""
@@ -1334,9 +1371,9 @@
   // 業種・配当金が未設定の銘柄に自動補完
   let dataUpdated = false;
   stocks.forEach((s) => {
-    if (STOCK_INDUSTRY_MAP[s.code] && !s.industry) {
-      s.industry = STOCK_INDUSTRY_MAP[s.code];
-      dataUpdated = true;
+    if (!s.industry) {
+      const ind = detectIndustry(s.code, s.name);
+      if (ind) { s.industry = ind; dataUpdated = true; }
     }
     const divData = STOCK_DIVIDEND_MAP[s.code];
     if (divData) {
