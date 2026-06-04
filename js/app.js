@@ -910,9 +910,11 @@
         // データ行を読む
         while (i < lines.length) {
           const dataLine = lines[i].trim();
+          // 合計・次セクション・次ヘッダーで中断（空行が無いCSVでも区分を取り違えない）
           if (!dataLine || dataLine.includes("合計") || dataLine.includes("評価額")
-              || (dataLine.includes("株式") && dataLine.includes("預り"))
-              || dataLine.includes("投資信託") || dataLine.includes("ファンド名")) {
+              || dataLine.includes("預り") || dataLine.includes("投資信託")
+              || dataLine.includes("ファンド名")
+              || (dataLine.includes("銘柄コード") && dataLine.includes("銘柄名称"))) {
             break;
           }
 
