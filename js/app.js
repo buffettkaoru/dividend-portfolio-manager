@@ -817,6 +817,22 @@
     return ""; // 不明な日本個別株は手動選択
   }
 
+  // 文字列から銘柄コードを抽出（独立列でも「名称（7203）」埋め込みでも可）
+  function extractCode(str) {
+    if (!str) return "";
+    const s = String(str).trim();
+    // そのものがコード（4桁＋任意1文字 or 英字ティッカー）
+    let m = s.match(/^(\d{4}[A-Z0-9]?|[A-Z]{1,5})$/);
+    if (m) return m[1].toUpperCase();
+    // 「名称（7203）」「名称(7203)」全角/半角括弧
+    m = s.match(/[（(]\s*(\d{4}[A-Z0-9]?|[A-Z]{1,5})\s*[）)]/);
+    if (m) return m[1].toUpperCase();
+    // 「7203 名称」先頭コード
+    m = s.match(/^(\d{4}[A-Z0-9]?|[A-Z]{1,5})[\s　]/);
+    if (m) return m[1].toUpperCase();
+    return "";
+  }
+
   // 銘柄名がETF / REIT / 上場投信らしいか
   function looksLikeEtf(name) {
     if (!name) return false;
@@ -850,11 +866,12 @@
         const fHeaders = parseCsvLine(line);
         const fCol = {};
         fHeaders.forEach((h, idx) => {
-          if (h === "ファンド名") fCol.name = idx;
-          else if (h.includes("保有口数")) fCol.units = idx;
-          else if (h.includes("取得単価")) fCol.purchasePrice = idx;
-          else if (h.includes("基準価額")) fCol.currentPrice = idx;
-          else if (h.includes("分配金受取方法")) fCol.distMethod = idx;
+          if (h.includes("ファンド名") && fCol.name == null) fCol.name = idx;
+          // 口数列：SBIは「数量」、版によっては「保有口数」「口数」
+          else if (/保有口数|口数|保有数量|^数量$|数量/.test(h) && fCol.units == null) fCol.units = idx;
+          else if (/取得単価|取得価額|平均取得|買付単価/.test(h) && fCol.purchasePrice == null) fCol.purchasePrice = idx;
+          else if (/基準価額|現在値|時価/.test(h) && fCol.currentPrice == null) fCol.currentPrice = idx;
+          else if (h.includes("分配金") && fCol.distMethod == null) fCol.distMethod = idx;
         });
 
         i++;
@@ -862,8 +879,8 @@
           const dataLine = lines[i].trim();
           // セクション境界・合計・次ヘッダーでのみ中断（ファンド名に「株式」等が含まれても誤中断しない）
           if (!dataLine || dataLine.includes("合計")
-              || dataLine.includes("ファンド名") || dataLine.includes("銘柄コード")
-              || /預り\)|（特定|（NISA|サマリー/.test(dataLine)) {
+              || dataLine.includes("ファンド名") || dataLine.includes("預り")
+              || dataLine.includes("サマリー") || dataLine.includes("銘柄")) {
             break;
           }
           const cols = parseCsvLine(dataLine);
@@ -873,10 +890,8 @@
           const funits = csvNum(cols, fCol.units);
           const fpp = csvNum(cols, fCol.purchasePrice);
           const fcp = csvNum(cols, fCol.currentPrice);
-          const method = csvStr(cols, fCol.distMethod);
-
-          // 再投資型はスキップ（分配金を出さないため）
-          if (method.includes("再投資")) { i++; continue; }
+          // 受取/再投資に関わらず全ファンドを取り込む（SBIポートフォリオCSVに
+          // 受取方法欄は無く、人気の再投資型を取りこぼすと「反映されない」原因になる）
 
           if (funits != null && funits > 0) {
             fundList.push({
@@ -895,16 +910,26 @@
       }
 
       // 株式ヘッダー行を見つけたらデータを読む
-      if (line.includes("銘柄コード") && line.includes("銘柄名称")) {
+      // 「銘柄コード+銘柄名称」形式 or 「銘柄（コード）」結合形式の両対応
+      const isStockHeader =
+        (line.includes("銘柄コード") && line.includes("銘柄名称")) ||
+        ((line.includes("銘柄") || line.includes("コード")) &&
+         /数量|保有株数|株数/.test(line) && currentSection !== "fund" &&
+         !line.includes("ファンド名"));
+      if (isStockHeader) {
         const headers = parseCsvLine(line);
         const col = {};
         headers.forEach((h, idx) => {
-          if (h === "銘柄コード") col.code = idx;
-          else if (h === "銘柄名称") col.name = idx;
-          else if (h === "保有株数") col.shares = idx;
-          else if (h === "取得単価") col.purchasePrice = idx;
-          else if (h === "現在値") col.currentPrice = idx;
+          if ((h === "銘柄コード" || h.includes("コード")) && col.code == null) col.code = idx;
+          else if ((h === "銘柄名称" || h === "銘柄名" || h.includes("銘柄")) && col.name == null) col.name = idx;
+          else if (/保有株数|保有数量|^数量$|数量|株数/.test(h) && col.shares == null) col.shares = idx;
+          else if (/取得単価|取得価額|平均取得|買付単価/.test(h) && col.purchasePrice == null) col.purchasePrice = idx;
+          else if (/現在値|現在地|時価|基準価額/.test(h) && col.currentPrice == null) col.currentPrice = idx;
         });
+        // 「銘柄（コード）」結合列：コードと銘柄名が同じ列に入っている
+        if (col.name == null && col.code != null) col.name = col.code;
+        // コード独立列が無ければ銘柄名列からコードを抽出する
+        if (col.code == null && col.name != null) col.codeFromName = true;
 
         i++;
         // データ行を読む
@@ -919,10 +944,13 @@
           }
 
           const cols = parseCsvLine(dataLine);
-          const code = csvStr(cols, col.code).replace(/\s/g, "");
+          let rawName = csvStr(cols, col.name);
+          // コードは独立列 or 銘柄名（コード）から抽出
+          let code = col.code != null ? extractCode(csvStr(cols, col.code)) : "";
+          if (!code) code = extractCode(rawName);
           if (!code || !/^(\d{4}[A-Z0-9]?|[A-Z]{1,5})$/.test(code)) { i++; continue; }
-
-          const name = csvStr(cols, col.name);
+          // 銘柄名から「（コード）」部分を除去
+          const name = rawName.replace(/[（(]\s*(\d{4}[A-Z0-9]?|[A-Z]{1,5})\s*[）)]/, "").replace(/^(\d{4}[A-Z0-9]?|[A-Z]{1,5})[\s　]+/, "").trim();
           const shares = csvNum(cols, col.shares);
           const purchasePrice = csvNum(cols, col.purchasePrice);
           const currentPrice = csvNum(cols, col.currentPrice);
@@ -1069,6 +1097,7 @@
 
     // 投資信託データの統合
     let fundAdded = 0;
+    let fundUpdated = 0;
     if (result.funds && result.funds.length > 0) {
       result.funds.forEach((f) => {
         const existing = funds.find((ef) => ef.name === f.name);
@@ -1077,6 +1106,7 @@
           if (f.purchasePrice != null) existing.purchasePrice = f.purchasePrice;
           if (f.currentPrice != null) existing.currentPrice = f.currentPrice;
           if (f.account) existing.account = f.account;
+          fundUpdated++;
         } else {
           funds.push(f);
           fundAdded++;
@@ -1086,9 +1116,13 @@
       renderFundTable();
     }
 
-    let msg = `CSV読込完了: ${added}件追加、${updated}件更新`;
+    // ETF（国内・米国）の取込件数
+    const etfCount = result.stocks.filter((s) => s.industry === "ETF・他" || s.industry === "米国ETF").length;
+
+    let msg = `CSV読込完了: 株式・ETF ${added}件追加 / ${updated}件更新`;
+    if (etfCount > 0) msg += `（うちETF ${etfCount}件）`;
     if (result.nisa.length > 0) msg += `、NISA ${result.nisa.length}件反映`;
-    if (fundAdded > 0) msg += `、投資信託 ${fundAdded}件追加`;
+    if (fundAdded + fundUpdated > 0) msg += `、投資信託 ${fundAdded}件追加/${fundUpdated}件更新`;
     showCsvMessage(msg, false);
   }
 
