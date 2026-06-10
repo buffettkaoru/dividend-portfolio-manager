@@ -21,8 +21,13 @@
     scope: "both",
     divDisplay: "before_tax",
     basis: "dividend",
-    broker: "sbi"
+    broker: "sbi",
+    fxRate: 155
   });
+  // 旧バージョンからの移行：為替レート未設定なら補完
+  if (!settings.fxRate || isNaN(settings.fxRate) || settings.fxRate <= 0) {
+    settings.fxRate = 155;
+  }
 
   let industryTypes = loadData(STORAGE_KEYS.industryTypes, { ...DEFAULT_INDUSTRY_TYPES });
   let stockTypes = loadData(STORAGE_KEYS.stockTypes, []);
@@ -70,6 +75,54 @@
 
     renderIndustryTypeTable();
     renderStockTypeTable();
+
+    // 為替レート（USD/JPY）
+    const fxInput = document.getElementById("settingFxRate");
+    if (fxInput) {
+      fxInput.value = settings.fxRate;
+      fxInput.addEventListener("change", (e) => {
+        const v = parseFloat(e.target.value);
+        if (!isNaN(v) && v > 0) {
+          settings.fxRate = v;
+          saveData(STORAGE_KEYS.settings, settings);
+          const dashPage = document.getElementById("page-dashboard");
+          if (dashPage && dashPage.classList.contains("active")) renderDashboard();
+        }
+      });
+    }
+    const fxBtn = document.getElementById("fetchFxBtn");
+    if (fxBtn) {
+      fxBtn.addEventListener("click", async () => {
+        fxBtn.textContent = "取得中...";
+        fxBtn.disabled = true;
+        const rate = await fetchFxRate();
+        fxBtn.textContent = "最新レートを自動取得";
+        fxBtn.disabled = false;
+        if (rate) {
+          settings.fxRate = Math.round(rate * 100) / 100;
+          saveData(STORAGE_KEYS.settings, settings);
+          if (fxInput) fxInput.value = settings.fxRate;
+          const info = document.getElementById("fxInfo");
+          if (info) info.textContent = "取得成功: 1ドル = " + settings.fxRate + "円";
+        } else {
+          const info = document.getElementById("fxInfo");
+          if (info) info.textContent = "自動取得に失敗しました。手動で入力してください。";
+        }
+      });
+    }
+  }
+
+  // 為替レート自動取得（無料API・キー不要）
+  async function fetchFxRate() {
+    try {
+      const resp = await fetch("https://open.er-api.com/v6/latest/USD");
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (data && data.rates && data.rates.JPY) return data.rates.JPY;
+      return null;
+    } catch {
+      return null;
+    }
   }
 
   function renderIndustryTypeTable() {
@@ -144,21 +197,28 @@
     tbody.innerHTML = "";
     stocks.forEach((s, i) => {
       const tr = document.createElement("tr");
+      const cur = s.currency === "USD" ? "USD" : "JPY";
       tr.innerHTML = `
         <td><input type="checkbox" class="row-check" data-idx="${i}"></td>
-        <td><input type="text" value="${s.code || ""}" data-field="code" data-idx="${i}" style="width:80px"></td>
-        <td><input type="text" value="${s.name || ""}" data-field="name" data-idx="${i}" style="width:160px"></td>
+        <td><input type="text" value="${escapeHtml(s.code || "")}" data-field="code" data-idx="${i}" style="width:80px" placeholder="7203/SPYD"></td>
+        <td><input type="text" value="${escapeHtml(s.name || "")}" data-field="name" data-idx="${i}" style="width:160px"></td>
         <td>
           <select data-field="industry" data-idx="${i}" style="${s.industry ? "" : "border:1px solid #e53935;background:rgba(229,57,53,0.12)"}" title="${s.industry ? "" : "業種を自動判定できませんでした。手動で選択してください"}">
             <option value="">${s.industry ? "選択" : "⚠ 要選択"}</option>
             ${INDUSTRIES.map((ind) => `<option value="${ind}" ${s.industry === ind ? "selected" : ""}>${ind}</option>`).join("")}
           </select>
         </td>
-        <td><input type="number" value="${s.shares || ""}" data-field="shares" data-idx="${i}" style="width:70px" min="0"></td>
+        <td>
+          <select data-field="currency" data-idx="${i}" style="width:70px" title="米国株はドル建てで入力し、為替レートで円換算されます">
+            <option value="JPY" ${cur === "JPY" ? "selected" : ""}>円</option>
+            <option value="USD" ${cur === "USD" ? "selected" : ""}>＄</option>
+          </select>
+        </td>
+        <td><input type="number" value="${s.shares || ""}" data-field="shares" data-idx="${i}" style="width:70px" min="0" step="any"></td>
         <td><input type="number" value="${s.purchasePrice || ""}" data-field="purchasePrice" data-idx="${i}" style="width:90px" min="0" step="0.01"></td>
         <td><input type="number" value="${s.currentPrice || ""}" data-field="currentPrice" data-idx="${i}" style="width:90px" min="0" step="0.01"></td>
         <td><input type="number" value="${s.divPerShare || ""}" data-field="divPerShare" data-idx="${i}" style="width:90px" min="0" step="0.01"></td>
-        <td><input type="text" value="${s.divMonths || ""}" data-field="divMonths" data-idx="${i}" style="width:100px" placeholder="3,6,9,12"></td>
+        <td><input type="text" value="${escapeHtml(s.divMonths || "")}" data-field="divMonths" data-idx="${i}" style="width:100px" placeholder="3,6,9,12"></td>
       `;
       // イベントリスナー
       tr.querySelectorAll("input:not(.row-check), select").forEach((el) => {
@@ -169,9 +229,26 @@
           if (["shares", "purchasePrice", "currentPrice", "divPerShare"].includes(field)) {
             val = val === "" ? null : parseFloat(val);
           }
+          if (field === "code") {
+            // 小文字ティッカー・全角を正規化
+            val = String(val).trim().toUpperCase().replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+            stocks[idx][field] = val;
+            // コードから業種・配当・通貨を自動補完
+            const ind = detectIndustry(val, stocks[idx].name);
+            if (ind && !stocks[idx].industry) stocks[idx].industry = ind;
+            if (isUsCode(val)) stocks[idx].currency = "USD";
+            const divData = STOCK_DIVIDEND_MAP[val];
+            if (divData) {
+              if (stocks[idx].divPerShare == null || stocks[idx].divPerShare === 0) stocks[idx].divPerShare = divData.div;
+              if (!stocks[idx].divMonths) stocks[idx].divMonths = divData.months;
+            }
+            saveData(STORAGE_KEYS.stocks, stocks);
+            renderEntryTable();
+            return;
+          }
           stocks[idx][field] = val;
           saveData(STORAGE_KEYS.stocks, stocks);
-          if (field === "industry") renderEntryTable();
+          if (field === "industry" || field === "currency") renderEntryTable();
         });
       });
       tbody.appendChild(tr);
@@ -180,7 +257,7 @@
 
   document.getElementById("addRowBtn").addEventListener("click", () => {
     stocks.push({
-      code: "", name: "", industry: "", shares: null,
+      code: "", name: "", industry: "", currency: "JPY", shares: null,
       purchasePrice: null, currentPrice: null, divPerShare: null, divMonths: ""
     });
     saveData(STORAGE_KEYS.stocks, stocks);
@@ -219,7 +296,8 @@
           const idx = parseInt(e.target.dataset.idx);
           const field = e.target.dataset.field;
           let val = e.target.value;
-          if (field === "shares") val = val === "" ? null : parseInt(val);
+          if (field === "shares") val = val === "" ? null : parseFloat(val);
+          if (field === "code") val = String(val).trim().toUpperCase();
           nisaItems[idx][field] = val;
           saveData(STORAGE_KEYS.nisa, nisaItems);
           if (field === "code") {
@@ -253,10 +331,27 @@
   });
 
   // ----- 投資信託ページ -----
+  function renderFundSummary() {
+    const el = document.getElementById("fundSummary");
+    if (!el) return;
+    let val = 0, pur = 0, dist = 0;
+    funds.forEach((f) => {
+      if (!f.units || f.units <= 0) return;
+      if (f.currentPrice) val += (f.currentPrice / 10000) * f.units;
+      if (f.purchasePrice) pur += (f.purchasePrice / 10000) * f.units;
+      if (f.distPerUnit) dist += (f.distPerUnit / 10000) * f.units;
+    });
+    const pl = val - pur;
+    const plPct = pur > 0 ? (pl / pur) * 100 : 0;
+    const plClass = pl >= 0 ? "positive" : "negative";
+    el.innerHTML = `評価額合計: <strong>${formatNum(val)}円</strong>　購入額合計: ${formatNum(pur)}円　損益: <span class="${plClass}">${pl >= 0 ? "+" : ""}${formatNum(pl)}円 (${pl >= 0 ? "+" : ""}${plPct.toFixed(2)}%)</span>　年間分配金: ${formatNum(dist)}円`;
+  }
+
   function renderFundTable() {
     const tbody = document.getElementById("fundBody");
     if (!tbody) return;
     tbody.innerHTML = "";
+    renderFundSummary();
     funds.forEach((f, i) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -283,6 +378,7 @@
           }
           funds[idx][field] = val;
           saveData(STORAGE_KEYS.funds, funds);
+          renderFundSummary();
         });
       });
       tbody.appendChild(tr);
@@ -315,7 +411,12 @@
   let monthlyDivChartInstance = null;
 
   function isUsCode(code) {
-    return /^[A-Z]{1,5}$/.test(code || "");
+    return /^[A-Z][A-Z0-9.]{0,5}$/.test(String(code || "").toUpperCase()) && !/^\d/.test(String(code || ""));
+  }
+
+  // 銘柄の為替換算レート（米国株＝ドル建て入力を円換算）
+  function fxOf(s) {
+    return s.currency === "USD" ? (settings.fxRate || 155) : 1;
   }
 
   function getValidStocks() {
@@ -326,6 +427,12 @@
       if (settings.scope === "us" && !us) return false;
       return true;
     });
+  }
+
+  // 集計対象の投資信託（国内扱い。米国のみ表示時は除外）
+  function getValidFunds() {
+    if (settings.scope === "us") return [];
+    return funds.filter((f) => f.name && f.units && f.units > 0);
   }
 
   function formatNum(n) {
@@ -341,6 +448,7 @@
 
   function renderDashboard() {
     const valid = getValidStocks();
+    const validFunds = getValidFunds();
 
     // 集計
     let totalPurchase = 0;
@@ -354,9 +462,10 @@
     for (let m = 1; m <= 12; m++) monthlyDiv[m] = 0;
 
     valid.forEach((s) => {
-      const purchase = (s.purchasePrice || 0) * s.shares;
-      const valuation = (s.currentPrice || 0) * s.shares;
-      const dividend = (s.divPerShare || 0) * s.shares;
+      const fx = fxOf(s);
+      const purchase = (s.purchasePrice || 0) * s.shares * fx;
+      const valuation = (s.currentPrice || 0) * s.shares * fx;
+      const dividend = (s.divPerShare || 0) * s.shares * fx;
 
       totalPurchase += purchase;
       totalValuation += valuation;
@@ -382,8 +491,8 @@
       else if (yieldPct < 6.0) yieldBuckets["~6.0%"]++;
       else yieldBuckets["6.0%以上"]++;
 
-      // 月別配当（米国ETF・米国個別株は除外）
-      if (s.industry !== "米国ETF" && s.industry !== "米国個別株" && s.divMonths) {
+      // 月別配当（米国はドル建てを円換算して計上）
+      if (s.divMonths) {
         const months = s.divMonths.split(",").map((m) => parseInt(m.trim())).filter((m) => m >= 1 && m <= 12);
         const perMonth = months.length > 0 ? dividend / months.length : 0;
         months.forEach((m) => {
@@ -392,29 +501,40 @@
       }
     });
 
-    // 投資信託の分配金を加算
+    // 投資信託を加算（★分配金の有無に関わらず評価額・購入額に反映する★
+    //   再投資型のインデックスファンドも資産として正しくカウント）
     let totalFundDist = 0;
     let totalFundDistAfterTax = 0;
     let totalFundValuation = 0;
     let totalFundPurchase = 0;
     const TAX_RATE = 0.20315;
-    funds.forEach((f) => {
-      if (!f.units || !f.distPerUnit) return;
-      const dist = (f.distPerUnit / 10000) * f.units; // 万口あたり→実際の分配金
-      totalFundDist += dist;
-      if (f.account === "NISA") {
-        totalFundDistAfterTax += dist;
-      } else {
-        totalFundDistAfterTax += dist * (1 - TAX_RATE);
-      }
-      if (f.currentPrice && f.units) totalFundValuation += (f.currentPrice / 10000) * f.units;
-      if (f.purchasePrice && f.units) totalFundPurchase += (f.purchasePrice / 10000) * f.units;
+    validFunds.forEach((f) => {
+      // 評価額・購入額（基準価額・取得単価は1万口あたり円）
+      const fVal = (f.currentPrice && f.units) ? (f.currentPrice / 10000) * f.units : 0;
+      const fPur = (f.purchasePrice && f.units) ? (f.purchasePrice / 10000) * f.units : 0;
+      totalFundValuation += fVal;
+      totalFundPurchase += fPur;
 
-      // 月別配当に加算
-      if (f.distMonths) {
-        const fMonths = f.distMonths.split(",").map((m) => parseInt(m.trim())).filter((m) => m >= 1 && m <= 12);
-        const perMonth = fMonths.length > 0 ? dist / fMonths.length : 0;
-        fMonths.forEach((m) => { monthlyDiv[m] += perMonth; });
+      // 業種チャートに「投資信託」として反映
+      if (fVal > 0) industryValMap["投資信託"] = (industryValMap["投資信託"] || 0) + fVal;
+
+      // 分配金（受取型のみ・未入力なら0）
+      if (f.distPerUnit && f.units) {
+        const dist = (f.distPerUnit / 10000) * f.units; // 万口あたり→実際の分配金
+        totalFundDist += dist;
+        if (f.account === "NISA") {
+          totalFundDistAfterTax += dist;
+        } else {
+          totalFundDistAfterTax += dist * (1 - TAX_RATE);
+        }
+        industryDivMap["投資信託"] = (industryDivMap["投資信託"] || 0) + dist;
+
+        // 月別配当に加算
+        if (f.distMonths) {
+          const fMonths = f.distMonths.split(",").map((m) => parseInt(m.trim())).filter((m) => m >= 1 && m <= 12);
+          const perMonth = fMonths.length > 0 ? dist / fMonths.length : 0;
+          fMonths.forEach((m) => { monthlyDiv[m] += perMonth; });
+        }
       }
     });
 
@@ -425,13 +545,14 @@
     // 税引後配当金の計算（NISA分は非課税、特定口座は20.315%課税）
     let totalDivAfterTax = totalFundDistAfterTax;
     valid.forEach((s) => {
-      const dividend = (s.divPerShare || 0) * s.shares;
+      const fx = fxOf(s);
+      const dividend = (s.divPerShare || 0) * s.shares * fx;
       const nisaItem = nisaItems.find((n) => n.code === s.code);
       if (nisaItem && nisaItem.shares > 0) {
         const nisaShares = Math.min(nisaItem.shares, s.shares);
         const tokuteiShares = s.shares - nisaShares;
-        const nisaDiv = (s.divPerShare || 0) * nisaShares;
-        const tokuteiDiv = (s.divPerShare || 0) * tokuteiShares;
+        const nisaDiv = (s.divPerShare || 0) * nisaShares * fx;
+        const tokuteiDiv = (s.divPerShare || 0) * tokuteiShares * fx;
         totalDivAfterTax += nisaDiv + tokuteiDiv * (1 - TAX_RATE);
       } else {
         totalDivAfterTax += dividend * (1 - TAX_RATE);
@@ -469,7 +590,9 @@
     document.getElementById("divYieldYoc").innerHTML = displayYieldCost.toFixed(2) + '<span class="unit">%</span>';
     document.getElementById("annualDiv").innerHTML = formatNum(afterTax ? totalDivAfterTax : totalDividend) + '<span class="unit">円</span>';
     document.getElementById("annualDivAfterTax").innerHTML = formatNum(totalDivAfterTax) + '<span class="unit">円</span>';
-    document.getElementById("stockCount").innerHTML = valid.length + '<span class="unit">銘柄</span>';
+    let countHtml = valid.length + '<span class="unit">銘柄</span>';
+    if (validFunds.length > 0) countHtml += '<span style="font-size:0.65em;color:var(--gray);"> ＋投信' + validFunds.length + '本</span>';
+    document.getElementById("stockCount").innerHTML = countHtml;
 
     // 業種割合チャート（設定に応じて切替）
     const useDividend = settings.basis === "dividend";
@@ -484,13 +607,13 @@
     renderMonthlyDivChart(monthlyDiv);
 
     // 構成比バー
-    renderCompositionBar(industryValMap, valid);
+    renderCompositionBar(industryValMap, valid, validFunds);
 
     // Top20
     renderTop20(valid, totalDividend);
 
-    // 全銘柄一覧
-    renderHoldingsTable(valid, totalValuation, totalDividend);
+    // 全銘柄一覧（投資信託も含めて表示）
+    renderHoldingsTable(valid, validFunds, totalValuation, totalDividend);
 
     // 業種フィルター更新
     updateIndustryFilter(valid);
@@ -611,29 +734,38 @@
     return industryTypes[stock.industry] || "景気敏感";
   }
 
-  function renderCompositionBar(valMap, validStocks) {
+  function renderCompositionBar(valMap, validStocks, validFunds) {
     const bar = document.getElementById("compositionBar");
     bar.innerHTML = "";
+    validFunds = validFunds || [];
 
-    if (validStocks.length === 0) {
+    if (validStocks.length === 0 && validFunds.length === 0) {
       bar.innerHTML = '<div class="bar-empty">データなし</div>';
       document.getElementById("defensePct").textContent = "0";
       document.getElementById("cyclicalPct").textContent = "0";
       return;
     }
 
-    const totalVal = validStocks.reduce((sum, s) => sum + (s.currentPrice || 0) * s.shares, 0);
+    // 銘柄＋投信の評価額（米国株は円換算）
+    const items = validStocks.map((s) => ({
+      name: s.name || s.code,
+      val: (s.currentPrice || 0) * s.shares * fxOf(s),
+      type: getStockSensitivity(s)
+    })).concat(validFunds.map((f) => ({
+      name: f.name,
+      val: (f.currentPrice && f.units) ? (f.currentPrice / 10000) * f.units : 0,
+      type: "ディフェンシブ" // 投資信託は分散商品としてディフェンシブ扱い
+    }))).filter((it) => it.val > 0);
+
+    const totalVal = items.reduce((sum, it) => sum + it.val, 0);
     if (totalVal === 0) {
       bar.innerHTML = '<div class="bar-empty">データなし</div>';
+      document.getElementById("defensePct").textContent = "0";
+      document.getElementById("cyclicalPct").textContent = "0";
       return;
     }
 
-    // 銘柄ごとの評価額を計算して構成比バーを描画
-    const items = validStocks.map((s) => ({
-      name: s.name || s.code,
-      val: (s.currentPrice || 0) * s.shares,
-      type: getStockSensitivity(s)
-    })).sort((a, b) => {
+    items.sort((a, b) => {
       if (a.type === b.type) return b.val - a.val;
       return a.type === "ディフェンシブ" ? -1 : 1;
     });
@@ -671,7 +803,7 @@
       code: s.code,
       name: s.name,
       industry: s.industry,
-      dividend: (s.divPerShare || 0) * s.shares
+      dividend: (s.divPerShare || 0) * s.shares * fxOf(s)
     }));
 
     if (filterVal !== "all") {
@@ -697,45 +829,68 @@
     `).join("");
   }
 
-  function renderHoldingsTable(validStocks, totalVal, totalDiv) {
+  function renderHoldingsTable(validStocks, validFunds, totalVal, totalDiv) {
     const tbody = document.querySelector("#holdingsTable tbody");
+    validFunds = validFunds || [];
 
-    if (validStocks.length === 0) {
+    if (validStocks.length === 0 && validFunds.length === 0) {
       tbody.innerHTML = '<tr><td colspan="16" class="empty-msg">銘柄を入力してください</td></tr>';
       return;
     }
 
     const rows = validStocks.map((s) => {
-      const purchase = (s.purchasePrice || 0) * s.shares;
-      const valuation = (s.currentPrice || 0) * s.shares;
+      const fx = fxOf(s);
+      const purchase = (s.purchasePrice || 0) * s.shares * fx;
+      const valuation = (s.currentPrice || 0) * s.shares * fx;
       const pl = valuation - purchase;
       const plPct = purchase > 0 ? (pl / purchase) * 100 : 0;
-      const dividend = (s.divPerShare || 0) * s.shares;
+      const dividend = (s.divPerShare || 0) * s.shares * fx;
       const valPct = totalVal > 0 ? (valuation / totalVal) * 100 : 0;
       const divPct = totalDiv > 0 ? (dividend / totalDiv) * 100 : 0;
       const yieldAcq = purchase > 0 ? (dividend / purchase) * 100 : 0;
       const yieldCur = valuation > 0 ? (dividend / valuation) * 100 : 0;
-      return { ...s, purchase, valuation, pl, plPct, dividend, valPct, divPct, yieldAcq, yieldCur };
+      const isUsd = s.currency === "USD";
+      return { ...s, isUsd, isFund: false, purchase, valuation, pl, plPct, dividend, valPct, divPct, yieldAcq, yieldCur };
+    });
+
+    // 投資信託も一覧に表示（コード欄は「投信」、単価は1万口あたり円）
+    validFunds.forEach((f) => {
+      const purchase = (f.purchasePrice && f.units) ? (f.purchasePrice / 10000) * f.units : 0;
+      const valuation = (f.currentPrice && f.units) ? (f.currentPrice / 10000) * f.units : 0;
+      const pl = valuation - purchase;
+      const plPct = purchase > 0 ? (pl / purchase) * 100 : 0;
+      const dividend = (f.distPerUnit && f.units) ? (f.distPerUnit / 10000) * f.units : 0;
+      const valPct = totalVal > 0 ? (valuation / totalVal) * 100 : 0;
+      const divPct = totalDiv > 0 ? (dividend / totalDiv) * 100 : 0;
+      const yieldAcq = purchase > 0 ? (dividend / purchase) * 100 : 0;
+      const yieldCur = valuation > 0 ? (dividend / valuation) * 100 : 0;
+      rows.push({
+        code: "投信", name: f.name, industry: "投資信託",
+        shares: f.units, purchasePrice: f.purchasePrice, currentPrice: f.currentPrice,
+        divPerShare: f.distPerUnit || 0, isUsd: false, isFund: true,
+        purchase, valuation, pl, plPct, dividend, valPct, divPct, yieldAcq, yieldCur
+      });
     });
 
     rows.sort((a, b) => b.dividend - a.dividend);
 
     tbody.innerHTML = rows.map((s, i) => {
       const plClass = s.pl >= 0 ? "positive" : "negative";
+      const curMark = s.isUsd ? " <span style='color:var(--gray);font-size:0.85em' title='ドル建て（為替換算済）'>＄</span>" : "";
       return `
         <tr>
           <td>${i + 1}</td>
-          <td>${escapeHtml(s.code)}</td>
+          <td>${escapeHtml(s.code)}${curMark}</td>
           <td>${escapeHtml(s.name)}</td>
           <td>${escapeHtml(s.industry)}</td>
           <td class="num">${formatNum(s.shares)}</td>
-          <td class="num">${formatNum(s.purchasePrice)}</td>
+          <td class="num">${s.isUsd ? (s.purchasePrice || 0) + "$" : formatNum(s.purchasePrice)}</td>
           <td class="num">${formatNum(s.purchase)}</td>
-          <td class="num">${formatNum(s.currentPrice)}</td>
+          <td class="num">${s.isUsd ? (s.currentPrice || 0) + "$" : formatNum(s.currentPrice)}</td>
           <td class="num">${formatNum(s.valuation)}</td>
           <td class="num">${s.valPct.toFixed(2)}%</td>
           <td class="num ${plClass}">${s.pl >= 0 ? "+" : ""}${formatNum(s.pl)} (${s.pl >= 0 ? "+" : ""}${s.plPct.toFixed(2)}%)</td>
-          <td class="num">${s.divPerShare || 0}</td>
+          <td class="num">${s.divPerShare || 0}${s.isUsd ? "$" : ""}</td>
           <td class="num">${formatNum(s.dividend)}</td>
           <td class="num">${s.divPct.toFixed(2)}%</td>
           <td class="num">${s.yieldAcq.toFixed(2)}%</td>
@@ -761,7 +916,7 @@
 
   document.getElementById("industryFilter").addEventListener("change", () => {
     const valid = getValidStocks();
-    const totalDiv = valid.reduce((sum, s) => sum + (s.divPerShare || 0) * s.shares, 0);
+    const totalDiv = valid.reduce((sum, s) => sum + (s.divPerShare || 0) * s.shares * fxOf(s), 0);
     renderTop20(valid, totalDiv);
   });
 
@@ -811,7 +966,7 @@
     }
     if (STOCK_INDUSTRY_MAP[code]) return STOCK_INDUSTRY_MAP[code];
     // 英字コード（ティッカー）＝米国株。ETFマップに無ければ個別株扱い
-    if (/^[A-Z]{1,5}$/.test(code)) return "米国個別株";
+    if (/^[A-Z]{1,5}(?:\.[A-Z])?$/.test(code)) return "米国個別株";
     // 日本のETF・REITは銘柄名から推定（4桁コードでDB未登録のもの）
     if (looksLikeEtf(name)) return "ETF・他";
     return ""; // 不明な日本個別株は手動選択
@@ -822,13 +977,13 @@
     if (!str) return "";
     const s = String(str).trim();
     // そのものがコード（4桁＋任意1文字 or 英字ティッカー）
-    let m = s.match(/^(\d{4}[A-Z0-9]?|[A-Z]{1,5})$/);
+    let m = s.match(/^(\d{4}[A-Z0-9]?|[A-Z]{1,5}(?:\.[A-Z])?)$/);
     if (m) return m[1].toUpperCase();
     // 「名称（7203）」「名称(7203)」全角/半角括弧
-    m = s.match(/[（(]\s*(\d{4}[A-Z0-9]?|[A-Z]{1,5})\s*[）)]/);
+    m = s.match(/[（(]\s*(\d{4}[A-Z0-9]?|[A-Z]{1,5}(?:\.[A-Z])?)\s*[）)]/);
     if (m) return m[1].toUpperCase();
     // 「7203 名称」先頭コード
-    m = s.match(/^(\d{4}[A-Z0-9]?|[A-Z]{1,5})[\s　]/);
+    m = s.match(/^(\d{4}[A-Z0-9]?|[A-Z]{1,5}(?:\.[A-Z])?)[\s　]/);
     if (m) return m[1].toUpperCase();
     return "";
   }
@@ -901,7 +1056,8 @@
               currentPrice: fcp,
               distPerUnit: null,
               distMonths: "",
-              account: currentSection === "nisa" ? "NISA" : "特定"
+              // つみたて投資枠・成長投資枠（NISA）はどちらも非課税口座として扱う
+              account: (currentSection === "nisa" || currentSection === "tsumitate") ? "NISA" : "特定"
             });
           }
           i++;
@@ -948,9 +1104,9 @@
           // コードは独立列 or 銘柄名（コード）から抽出
           let code = col.code != null ? extractCode(csvStr(cols, col.code)) : "";
           if (!code) code = extractCode(rawName);
-          if (!code || !/^(\d{4}[A-Z0-9]?|[A-Z]{1,5})$/.test(code)) { i++; continue; }
+          if (!code || !/^(\d{4}[A-Z0-9]?|[A-Z]{1,5}(?:\.[A-Z])?)$/.test(code)) { i++; continue; }
           // 銘柄名から「（コード）」部分を除去
-          const name = rawName.replace(/[（(]\s*(\d{4}[A-Z0-9]?|[A-Z]{1,5})\s*[）)]/, "").replace(/^(\d{4}[A-Z0-9]?|[A-Z]{1,5})[\s　]+/, "").trim();
+          const name = rawName.replace(/[（(]\s*(\d{4}[A-Z0-9]?|[A-Z]{1,5}(?:\.[A-Z])?)\s*[）)]/, "").replace(/^(\d{4}[A-Z0-9]?|[A-Z]{1,5}(?:\.[A-Z])?)[\s　]+/, "").trim();
           const shares = csvNum(cols, col.shares);
           const purchasePrice = csvNum(cols, col.purchasePrice);
           const currentPrice = csvNum(cols, col.currentPrice);
@@ -992,6 +1148,7 @@
           code: s.code,
           name: s.name,
           industry: detectIndustry(s.code, s.name),
+          currency: isUsCode(s.code) ? "USD" : "JPY",
           shares: s.shares,
           purchasePrice: s.purchasePrice,
           currentPrice: s.currentPrice,
@@ -1070,6 +1227,7 @@
         if (imp.currentPrice != null) existing.currentPrice = imp.currentPrice;
         if (imp.name && !existing.name) existing.name = imp.name;
         if (!existing.industry) existing.industry = detectIndustry(imp.code, imp.name || existing.name);
+        if (!existing.currency) existing.currency = isUsCode(imp.code) ? "USD" : "JPY";
         updated++;
       } else {
         stocks.push(imp);
@@ -1244,7 +1402,7 @@
           const unitStr = csvStr(cols, col.sharesUnit);
           const isFund = unitStr.includes("口") || sharesStr.includes("口");
 
-          if (code && /^(\d{4}[A-Z0-9]?|[A-Z]{1,5})$/.test(code) && !isFund) {
+          if (code && /^(\d{4}[A-Z0-9]?|[A-Z]{1,5}(?:\.[A-Z])?)$/.test(code) && !isFund) {
             if (sharesVal != null && sharesVal > 0) {
               allStocks.push({ code, name, shares: sharesVal, purchasePrice, currentPrice, section });
               if (section === "nisa") nisaList.push({ code, shares: sharesVal });
@@ -1283,6 +1441,7 @@
         merged[s.code] = {
           code: s.code, name: s.name,
           industry: detectIndustry(s.code, s.name),
+          currency: isUsCode(s.code) ? "USD" : "JPY",
           shares: s.shares, purchasePrice: s.purchasePrice, currentPrice: s.currentPrice,
           divPerShare: divData ? divData.div : null,
           divMonths: divData ? divData.months : ""
@@ -1380,6 +1539,8 @@
     if (!priceMap) return;
     let updated = false;
     stocks.forEach((s) => {
+      // 株価APIは国内銘柄（円建て）のみ。米国株（ドル建て）は誤更新を防ぐためスキップ
+      if (s.currency === "USD" || isUsCode(s.code)) return;
       if (priceMap[s.code]) {
         s.currentPrice = priceMap[s.code];
         updated = true;
@@ -1404,9 +1565,21 @@
   }
 
   // ----- 初期化 -----
-  // 業種・配当金が未設定の銘柄に自動補完
+  // 業種・配当金が未設定の銘柄に自動補完 ＋ v4.0データ移行
   let dataUpdated = false;
   stocks.forEach((s) => {
+    // 【移行】通貨フィールドが無い既存データに付与（英字ティッカー＝米国＝ドル建て）
+    if (!s.currency) {
+      s.currency = isUsCode(s.code) ? "USD" : "JPY";
+      dataUpdated = true;
+    }
+    // 【移行】旧バージョンで円建て登録されていた米国ETF配当をドル建てDB値に置換
+    //（手入力で変更されている場合は触らない）
+    if (s.currency === "USD" && US_LEGACY_YEN_DIV[s.code] != null
+        && s.divPerShare === US_LEGACY_YEN_DIV[s.code]) {
+      const newDiv = STOCK_DIVIDEND_MAP[s.code];
+      if (newDiv) { s.divPerShare = newDiv.div; dataUpdated = true; }
+    }
     if (!s.industry) {
       const ind = detectIndustry(s.code, s.name);
       if (ind) { s.industry = ind; dataUpdated = true; }
@@ -1448,7 +1621,7 @@
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "3.1";
+  const APP_VERSION = "4.0";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());

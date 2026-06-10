@@ -80,6 +80,13 @@
             <option value="other">その他</option>
           </select>
         </div>
+
+        <div class="setting-card">
+          <h3>為替レート（1ドル＝円）を設定してください。</h3>
+          <input type="number" id="settingFxRate" min="1" step="0.01" style="width:120px; padding:8px; border-radius:6px; border:1px solid var(--border, #444); background:transparent; color:inherit;"> 円
+          <button class="btn btn-small" id="fetchFxBtn" style="margin-left:8px;">最新レートを自動取得</button>
+          <p class="setting-note" id="fxInfo">※米国株・米国ETF（ドル建て入力）の円換算に使用します。</p>
+        </div>
       </div>
 
       <!-- 業種別 ディフェンシブ・景気敏感 設定 -->
@@ -163,7 +170,7 @@
           <canvas id="yieldDistChart"></canvas>
         </div>
         <div class="chart-card">
-          <h3>配当金支払額（月別）※米国は除く</h3>
+          <h3>配当金支払額（月別）※米国は為替レートで円換算</h3>
           <canvas id="monthlyDivChart"></canvas>
         </div>
       </section>
@@ -233,7 +240,7 @@
     <!-- ===== 銘柄入力ページ ===== -->
     <div class="page" id="page-entry">
       <h2 class="page-title">銘柄入力</h2>
-      <p class="page-desc">保有銘柄の情報を入力してください。</p>
+      <p class="page-desc">保有銘柄の情報を入力してください。米国株・米国ETFは通貨「＄」を選び、株価・配当金を<strong>ドル</strong>で入力してください（設定の為替レートで自動円換算）。</p>
 
       <div class="entry-form-area">
         <div class="entry-toolbar">
@@ -254,6 +261,7 @@
                 <th>銘柄コード</th>
                 <th>銘柄名</th>
                 <th>業種</th>
+                <th>通貨</th>
                 <th>保有数</th>
                 <th>取得単価</th>
                 <th>現在株価</th>
@@ -300,7 +308,8 @@
     <!-- ===== 投資信託ページ ===== -->
     <div class="page" id="page-funds">
       <h2 class="page-title">投資信託（分配金管理）</h2>
-      <p class="page-desc">分配金を受け取っている投資信託を入力してください。※再投資型（分配金なし）のファンドは入力不要です。</p>
+      <p class="page-desc">保有している投資信託を入力してください。<strong>再投資型（分配金なし）のインデックスファンドも、評価額・損益が管理シートに反映されます。</strong>分配金がある場合のみ「年間分配金」を入力してください。</p>
+      <div id="fundSummary" style="margin:8px 0 16px; padding:10px 14px; border-radius:8px; background:rgba(68,114,196,0.12); border:1px solid rgba(68,114,196,0.4); font-size:0.9rem;"></div>
 
       <div class="entry-form-area">
         <div class="entry-toolbar">
@@ -327,13 +336,13 @@
           </table>
         </div>
         <p class="setting-note">※年間分配金は「1万口あたりの年間合計分配金（円）」を入力してください。</p>
-        <p class="setting-note">※SBI証券のCSV読込時に自動登録されます（受取型のみ）。</p>
+        <p class="setting-note">※SBI証券・楽天証券のCSV読込時に自動登録されます（つみたて投資枠はNISA口座として取り込みます）。</p>
       </div>
     </div>
 
   </div>
 
-  <script src="js/data.js?v=3.3"></script>
-  <script src="js/app.js?v=3.3"></script>
+  <script src="js/data.js?v=4.0"></script>
+  <script src="js/app.js?v=4.0"></script>
 </body>
 </html>
