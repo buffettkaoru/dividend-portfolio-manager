@@ -42,6 +42,12 @@
   --border: #dddddd;
 }
 
+/* ライトモード時：表ヘッダーは紺地なので文字は白にする（青文字だと読めない） */
+.light-mode thead th,
+.light-mode .settings-table th {
+  color: #ffffff;
+}
+
 html {
   font-size: 14px;
 }
@@ -155,6 +161,7 @@ body {
   cursor: pointer;
   font-size: 0.85rem;
   transition: opacity 0.2s;
+  white-space: nowrap;
 }
 
 .btn:hover {
@@ -654,6 +661,7 @@ td.num {
 
 .entry-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.8rem;
   margin-bottom: 1rem;
 }
@@ -710,7 +718,7 @@ footer {
 
   .nav-link {
     font-size: 0.75rem;
-    padding: 0.6rem;
+    padding: 1rem 0.4rem; /* タップしやすい高さ(44px以上)を確保 */
     text-align: center;
   }
 

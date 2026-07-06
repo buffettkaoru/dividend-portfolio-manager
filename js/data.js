@@ -296,6 +296,29 @@ const US_LEGACY_YEN_DIV = {
   "VT":413,"VYM":520,"VIG":370,"SCHD":420,"JEPI":700,"JEPQ":680
 };
 
+// ===== サンプルデータ（「サンプルデータを試す」ボタン用） =====
+// 国内高配当株 + 米国ETF + 投資信託の見本ポートフォリオ。
+// 配当単価・配当月は読み込み時に STOCK_DIVIDEND_MAP から自動補完される。
+const SAMPLE_STOCKS = [
+  { code: "2914", name: "ＪＴ", shares: 200, purchasePrice: 3916, currentPrice: 4847 },
+  { code: "8058", name: "三菱商事", shares: 100, purchasePrice: 2800, currentPrice: 3600 },
+  { code: "8306", name: "三菱ＵＦＪフィナンシャル・グループ", shares: 300, purchasePrice: 1200, currentPrice: 2100 },
+  { code: "8591", name: "オリックス", shares: 100, purchasePrice: 2156, currentPrice: 3450 },
+  { code: "8766", name: "東京海上ホールディングス", shares: 100, purchasePrice: 3500, currentPrice: 5600 },
+  { code: "9101", name: "日本郵船", shares: 100, purchasePrice: 4100, currentPrice: 5200 },
+  { code: "9432", name: "日本電信電話", shares: 1000, purchasePrice: 146, currentPrice: 153 },
+  { code: "9433", name: "ＫＤＤＩ", shares: 100, purchasePrice: 4000, currentPrice: 4700 },
+  { code: "4502", name: "武田薬品工業", shares: 100, purchasePrice: 4000, currentPrice: 4300 },
+  { code: "SPYD", name: "SPDRポートフォリオS&P500高配当株式ETF", shares: 50, purchasePrice: 38, currentPrice: 42 }
+];
+const SAMPLE_NISA = [
+  { code: "8306", shares: 300 },
+  { code: "9433", shares: 100 }
+];
+const SAMPLE_FUNDS = [
+  { name: "eMAXIS Slim 米国株式(S&P500)", units: 350000, purchasePrice: 21500, currentPrice: 32800, distPerUnit: null, distMonths: "", account: "NISA" }
+];
+
 // ===== ローカルストレージキー =====
 const STORAGE_KEYS = {
   settings: "portfolio_settings",
