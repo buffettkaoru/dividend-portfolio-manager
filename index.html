@@ -10,7 +10,7 @@
   <meta property="og:description" content="SBI証券CSVを読み込むだけ。配当利回り・業種割合・月別配当をグラフで可視化する無料ツール。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://buffettkaoru.github.io/dividend-portfolio-manager/">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=4.1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <!-- Google AdSense（審査通過後にdata-ad-clientを設定） -->
   <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
@@ -123,6 +123,13 @@
     <div class="page" id="page-dashboard">
       <h2 class="page-title">管理シート</h2>
       <p id="priceUpdateInfo" style="font-size:0.75rem;color:#888;margin-bottom:8px;"></p>
+
+      <!-- データ未登録時の案内（サンプルデータでお試し） -->
+      <div id="sampleBanner" style="display:none; margin:0 0 16px; padding:12px 16px; border-radius:8px; background:rgba(212,168,67,0.12); border:1px solid rgba(212,168,67,0.5); font-size:0.9rem;">
+        まだ銘柄が登録されていません。「銘柄入力」ページで証券会社のCSVを読み込むか、
+        <button class="btn btn-primary" id="sampleBannerBtn" style="margin:0 4px; padding:0.3rem 0.9rem; font-size:0.85rem;">サンプルデータを試す</button>
+        で画面をすぐに体験できます。
+      </div>
 
       <!-- サマリーカード -->
       <section class="summary-section">
@@ -250,6 +257,7 @@
           <input type="file" id="csvFileAuto" accept=".csv,.txt" style="display:none">
           <button class="btn btn-price" id="updatePriceBtn">株価を最新に更新</button>
           <button class="btn btn-small" id="downloadTemplateBtn">テンプレートCSV</button>
+          <button class="btn btn-small" id="loadSampleBtn">サンプルデータを試す</button>
         </div>
         <div id="csvMessage" style="display:none; margin:8px 0; padding:10px; border-radius:6px; font-size:0.85rem;"></div>
 
@@ -342,7 +350,7 @@
 
   </div>
 
-  <script src="js/data.js?v=4.0"></script>
-  <script src="js/app.js?v=4.0"></script>
+  <script src="js/data.js?v=4.1"></script>
+  <script src="js/app.js?v=4.1"></script>
 </body>
 </html>

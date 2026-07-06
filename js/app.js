@@ -450,6 +450,10 @@
     const valid = getValidStocks();
     const validFunds = getValidFunds();
 
+    // データ未登録なら「サンプルデータを試す」案内を表示
+    const sampleBanner = document.getElementById("sampleBanner");
+    if (sampleBanner) sampleBanner.style.display = (valid.length === 0 && validFunds.length === 0) ? "block" : "none";
+
     // 集計
     let totalPurchase = 0;
     let totalValuation = 0;
@@ -619,9 +623,20 @@
     updateIndustryFilter(valid);
   }
 
+  // テーマ（ライト/ダーク）に応じたチャートの文字色・グリッド色
+  function chartTheme() {
+    const light = document.body.classList.contains("light-mode");
+    return {
+      text: light ? "#555555" : "#b0b8c8",
+      grid: light ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.08)",
+      gridSoft: light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"
+    };
+  }
+
   function renderIndustryChart(dataMap) {
     const ctx = document.getElementById("industryChart").getContext("2d");
     if (industryChartInstance) industryChartInstance.destroy();
+    const theme = chartTheme();
 
     const sorted = Object.entries(dataMap).sort((a, b) => b[1] - a[1]);
     const labels = sorted.map(([k]) => k);
@@ -643,7 +658,7 @@
         plugins: {
           legend: {
             position: "right",
-            labels: { color: "#b0b8c8", font: { size: 11 }, padding: 8 }
+            labels: { color: theme.text, font: { size: 11 }, padding: 8 }
           },
           tooltip: {
             callbacks: {
@@ -661,6 +676,7 @@
   function renderYieldDistChart(buckets) {
     const ctx = document.getElementById("yieldDistChart").getContext("2d");
     if (yieldDistChartInstance) yieldDistChartInstance.destroy();
+    const theme = chartTheme();
 
     yieldDistChartInstance = new Chart(ctx, {
       type: "bar",
@@ -676,12 +692,12 @@
       options: {
         responsive: true,
         scales: {
-          x: { ticks: { color: "#b0b8c8", font: { size: 10 } }, grid: { color: "rgba(255,255,255,0.05)" } },
-          y: { beginAtZero: true, ticks: { color: "#b0b8c8", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.08)" } }
+          x: { ticks: { color: theme.text, font: { size: 10 } }, grid: { color: theme.gridSoft } },
+          y: { beginAtZero: true, ticks: { color: theme.text, stepSize: 1 }, grid: { color: theme.grid } }
         },
         plugins: {
           legend: { display: false },
-          title: { display: true, text: "合計 " + Object.values(buckets).reduce((a, b) => a + b, 0), color: "#b0b8c8", font: { size: 12 } }
+          title: { display: true, text: "合計 " + Object.values(buckets).reduce((a, b) => a + b, 0), color: theme.text, font: { size: 12 } }
         }
       }
     });
@@ -690,6 +706,7 @@
   function renderMonthlyDivChart(monthlyDiv) {
     const ctx = document.getElementById("monthlyDivChart").getContext("2d");
     if (monthlyDivChartInstance) monthlyDivChartInstance.destroy();
+    const theme = chartTheme();
 
     const labels = [];
     const data = [];
@@ -712,8 +729,8 @@
       options: {
         responsive: true,
         scales: {
-          x: { ticks: { color: "#b0b8c8" }, grid: { color: "rgba(255,255,255,0.05)" } },
-          y: { beginAtZero: true, ticks: { color: "#b0b8c8", callback: (v) => v.toLocaleString() }, grid: { color: "rgba(255,255,255,0.08)" } }
+          x: { ticks: { color: theme.text }, grid: { color: theme.gridSoft } },
+          y: { beginAtZero: true, ticks: { color: theme.text, callback: (v) => v.toLocaleString() }, grid: { color: theme.grid } }
         },
         plugins: {
           legend: { display: false },
@@ -920,6 +937,42 @@
     renderTop20(valid, totalDiv);
   });
 
+  // ----- サンプルデータ読込 -----
+  function loadSampleData() {
+    if (stocks.length > 0 || funds.length > 0 || nisaItems.length > 0) {
+      if (!confirm("現在登録されているデータをサンプルデータで置き換えます。よろしいですか？\n（大切なデータは先に「データ書出」でバックアップしてください）")) return;
+    }
+    stocks = SAMPLE_STOCKS.map((s) => {
+      const divData = STOCK_DIVIDEND_MAP[s.code];
+      return {
+        code: s.code,
+        name: s.name,
+        industry: detectIndustry(s.code, s.name),
+        currency: isUsCode(s.code) ? "USD" : "JPY",
+        shares: s.shares,
+        purchasePrice: s.purchasePrice,
+        currentPrice: s.currentPrice,
+        divPerShare: divData ? divData.div : null,
+        divMonths: divData ? divData.months : ""
+      };
+    });
+    nisaItems = SAMPLE_NISA.map((n) => ({ ...n }));
+    funds = SAMPLE_FUNDS.map((f) => ({ ...f }));
+    saveData(STORAGE_KEYS.stocks, stocks);
+    saveData(STORAGE_KEYS.nisa, nisaItems);
+    saveData(STORAGE_KEYS.funds, funds);
+    renderEntryTable();
+    renderNisaTable();
+    renderFundTable();
+    // 管理シートに移動して結果をすぐ見せる
+    document.querySelector('.nav-link[data-page="dashboard"]').click();
+  }
+
+  const loadSampleBtn = document.getElementById("loadSampleBtn");
+  if (loadSampleBtn) loadSampleBtn.addEventListener("click", loadSampleData);
+  const sampleBannerBtn = document.getElementById("sampleBannerBtn");
+  if (sampleBannerBtn) sampleBannerBtn.addEventListener("click", loadSampleData);
+
   // ----- CSV読込（自動判別） -----
   document.getElementById("csvImportAutoBtn").addEventListener("click", () => {
     document.getElementById("csvFileAuto").click();
@@ -929,10 +982,16 @@
     const btn = document.getElementById("updatePriceBtn");
     btn.textContent = "取得中...";
     btn.disabled = true;
-    await updateStockPrices();
+    const updatedCount = await updateStockPrices();
     btn.textContent = "株価を最新に更新";
     btn.disabled = false;
-    showCsvMessage("株価を最新データに更新しました", false);
+    if (updatedCount === false) {
+      showCsvMessage("株価の自動取得に失敗しました。時間をおいて再度お試しいただくか、手動で入力してください。", true);
+    } else if (updatedCount === 0) {
+      showCsvMessage("株価データに該当する銘柄がありませんでした（米国株・データ未対応の銘柄は自動更新の対象外です）。", true);
+    } else {
+      showCsvMessage(`株価を最新データに更新しました（${updatedCount}銘柄）`, false);
+    }
   });
 
   function showCsvMessage(text, isError) {
@@ -1534,19 +1593,20 @@
     }
   }
 
+  // 戻り値: false = 株価データの取得自体に失敗 / 数値 = 株価を更新できた銘柄数
   async function updateStockPrices() {
     const priceMap = await fetchLatestPrices();
-    if (!priceMap) return;
-    let updated = false;
+    if (!priceMap) return false;
+    let updated = 0;
     stocks.forEach((s) => {
       // 株価APIは国内銘柄（円建て）のみ。米国株（ドル建て）は誤更新を防ぐためスキップ
       if (s.currency === "USD" || isUsCode(s.code)) return;
       if (priceMap[s.code]) {
         s.currentPrice = priceMap[s.code];
-        updated = true;
+        updated++;
       }
     });
-    if (updated) {
+    if (updated > 0) {
       saveData(STORAGE_KEYS.stocks, stocks);
       const now = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
       localStorage.setItem("lastPriceUpdate", now);
@@ -1556,6 +1616,7 @@
       const dashPage = document.getElementById("page-dashboard");
       if (dashPage && dashPage.classList.contains("active")) renderDashboard();
     }
+    return updated;
   }
 
   function updatePriceInfo() {
@@ -1615,13 +1676,16 @@
     const isLight = document.body.classList.contains("light-mode");
     themeBtn.textContent = isLight ? "ダークモードに切替" : "ライトモードに切替";
     localStorage.setItem("theme", isLight ? "light" : "dark");
+    // チャートの文字色をテーマに合わせて再描画
+    const dashPage = document.getElementById("page-dashboard");
+    if (dashPage && dashPage.classList.contains("active")) renderDashboard();
   });
 
   // 株価を自動取得（バックグラウンド）
   if (stocks.length > 0) updateStockPrices();
 
   // ----- 自動アップデート -----
-  const APP_VERSION = "4.0";
+  const APP_VERSION = "4.1";
   async function checkForUpdates() {
     try {
       const resp = await fetch("version.json?t=" + Date.now());
